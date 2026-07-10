@@ -1,6 +1,6 @@
 # ADR-0001 — Deployment tooling: Kustomize + raw manifests
 
-- **Status:** Proposed (mandatory human-review point before IO-T002)
+- **Status:** Accepted (user review passed at the Wave-1 exit review, 2026-07-10)
 - **Date:** 2026-07-10
 - **Deciders:** inferops maintainer (program review)
 

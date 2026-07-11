@@ -38,6 +38,12 @@ Critical path: **IO-T002 → IO-T003 → IO-T004 → IO-T005 → I5 → IO-T006 
 
 ## IO-T003 — Observability stack
 
+- **Status: DONE (2026-07-11).** Compose services (`compose/docker-compose.observability.yml`),
+  digest-pinned (see `docs/observability.md` §1 pins table). Golden dashboard
+  `dashboards/golden-dashboard.json` (11/11 Contract 2 names). Verified end-to-end:
+  `scripts/verify-observability.sh`, 16/16 passed
+  (`scripts/evidence/observability-20260711T233804Z/`) — includes a real exemplar → Tempo
+  trace resolution with the full expected span sequence.
 - **Goal/Repo:** deploy OTel Collector, Prometheus, Grafana, Tempo; dashboards as code keyed to the Contract 2 metrics vocabulary; exemplars wired end-to-end. inferops.
 - **Requirement:** dashboard JSON/jsonnet committed (as code, not click-ops); every panel queries the exact contract metric names; an exemplar on a latency histogram panel opens the corresponding Tempo trace; scrape configs use the capability descriptors for engine metric endpoints.
 - **Dependencies:** IO-T002; contracts metrics vocabulary (SC-T005).

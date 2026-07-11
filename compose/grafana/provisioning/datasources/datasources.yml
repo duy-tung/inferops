@@ -1,0 +1,29 @@
+# IO-T003 exemplar wiring: the Prometheus datasource's exemplar config points
+# a `trace_id` exemplar label at the Tempo datasource, so a histogram panel's
+# exemplar dot opens the corresponding Tempo trace (docs/observability.md §4).
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      httpMethod: POST
+      # docs/observability.md §4: the exemplar's `trace_id` label (attached by
+      # infergate's OpenMetrics exporter — internal/telemetry/promreg.go)
+      # becomes a click-through link to the Tempo datasource below.
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      serviceMap:
+        datasourceUid: prometheus

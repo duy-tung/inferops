@@ -1,0 +1,37 @@
+== inferops observability verification — 2026-07-11T23:38:04+00:00 ==
+-- driving test traffic (20 non-stream + 5 stream requests) --
+
+-- Prometheus scrape targets --
+infergate-gateway up
+otel-collector up
+prometheus up
+PASS  gateway scrape target up
+
+-- Contract 2 metric presence (all 11 canonical names) --
+PASS  metric present: inference_requests_total (1 series)
+PASS  metric present: inference_requests_in_flight (1 series)
+PASS  metric present: inference_queue_depth (1 series)
+PASS  metric present: inference_queue_wait_seconds_bucket (15 series)
+PASS  metric present: inference_ttft_seconds_bucket (13 series)
+PASS  metric present: inference_itl_seconds_bucket (12 series)
+PASS  metric present: inference_e2e_duration_seconds_bucket (13 series)
+PASS  metric present: inference_sheds_total (4 series)
+PASS  metric present: inference_retries_total (1 series)
+PASS  metric present: inference_backend_healthy (1 series)
+PASS  metric present: inference_usage_tokens_total (2 series)
+
+-- Exemplar on inference_ttft_seconds_bucket --
+PASS  exemplar found on inference_ttft_seconds_bucket (trace_id=fe003ccc0418d70b98728c8a9142919e)
+
+-- Exemplar trace_id resolves in Tempo, expected span sequence present --
+spans found: queue.wait,recv,settle,stream.relay,ttft,upstream.connect
+PASS  trace fe003ccc0418d70b98728c8a9142919e has the full expected span sequence (recv -> queue.wait -> upstream.connect -> ttft -> stream.relay -> settle)
+
+-- Grafana: golden dashboard provisioned --
+PASS  golden dashboard provisioned (uid=inferops-golden)
+
+-- Grafana: a dashboard panel query renders live data through the Prometheus datasource proxy --
+PASS  golden dashboard's token-throughput panel query renders live data via Grafana
+
+== Summary: 16 passed, 0 failed ==
+Evidence directory: /home/user/inferops/scripts/evidence/observability-20260711T233804Z

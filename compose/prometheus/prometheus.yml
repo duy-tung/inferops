@@ -1,0 +1,27 @@
+# IO-T003: scrapes the gateway's /metrics directly (bypasses the OTel
+# Collector — see compose/otel/otel-collector-config.yaml's header comment).
+# No relabel_configs that could introduce forbidden-cardinality labels
+# (docs/observability.md §2 cardinality policy) — only the stock `job`/
+# `instance` labels Prometheus adds itself.
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: infergate-gateway
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway:8080"]
+        labels:
+          app: infergate
+          component: gateway
+
+  - job_name: otel-collector
+    static_configs:
+      - targets: ["otel-collector:8888"]
+        labels:
+          app: otel-collector
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

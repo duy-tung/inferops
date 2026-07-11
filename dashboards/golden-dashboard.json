@@ -1,0 +1,182 @@
+{
+  "title": "inferops — golden dashboard",
+  "uid": "inferops-golden",
+  "editable": false,
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-15m", "to": "now" },
+  "refresh": "10s",
+  "tags": ["inferops", "contract-2"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate by status_class / error_class",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (status_class, error_class) (rate(inference_requests_total[1m]))",
+          "legendFormat": "{{status_class}}/{{error_class}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "In-flight requests by backend",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "inference_requests_in_flight",
+          "legendFormat": "{{backend}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Queue depth by tenant_tier",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "inference_queue_depth",
+          "legendFormat": "{{tenant_tier}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Queue wait seconds (p50/p95/p99) by tenant_tier",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum by (le, tenant_tier) (rate(inference_queue_wait_seconds_bucket[1m])))",
+          "legendFormat": "p50 {{tenant_tier}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, tenant_tier) (rate(inference_queue_wait_seconds_bucket[1m])))",
+          "legendFormat": "p95 {{tenant_tier}}",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le, tenant_tier) (rate(inference_queue_wait_seconds_bucket[1m])))",
+          "legendFormat": "p99 {{tenant_tier}}",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "TTFT seconds (p50/p95/p99) by model/backend — exemplar-enabled",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "custom": { "showPoints": "never" } }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, model, backend) (rate(inference_ttft_seconds_bucket[1m])))",
+          "legendFormat": "p95 {{model}}/{{backend}}",
+          "exemplar": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "ITL seconds (p50/p95/p99) by model/backend — exemplar-enabled",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, model, backend) (rate(inference_itl_seconds_bucket[1m])))",
+          "legendFormat": "p95 {{model}}/{{backend}}",
+          "exemplar": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "E2E duration seconds (p50/p95/p99) by model/backend/status_class — exemplar-enabled",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, model, backend, status_class) (rate(inference_e2e_duration_seconds_bucket[1m])))",
+          "legendFormat": "p95 {{model}}/{{backend}}/{{status_class}}",
+          "exemplar": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Sheds by reason",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "targets": [
+        {
+          "expr": "sum by (reason) (rate(inference_sheds_total[1m]))",
+          "legendFormat": "{{reason}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Retries by stage (always pre-first-token — nonzero mid-stream is a contract violation)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "targets": [
+        {
+          "expr": "sum by (stage) (rate(inference_retries_total[1m]))",
+          "legendFormat": "{{stage}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Backend health",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "fieldConfig": { "defaults": { "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "inference_backend_healthy",
+          "legendFormat": "{{backend}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Token throughput by direction",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
+      "targets": [
+        {
+          "expr": "sum by (direction) (rate(inference_usage_tokens_total[1m]))",
+          "legendFormat": "{{direction}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

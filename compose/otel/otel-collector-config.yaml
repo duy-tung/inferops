@@ -1,0 +1,40 @@
+# IO-T003: receives OTLP traces from the gateway (cmd/gateway -trace-exporter=otlp,
+# OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318) and forwards them to
+# Tempo. Metrics are NOT routed through the collector — Prometheus scrapes the
+# gateway's /metrics endpoint directly (docs/observability.md §1 topology,
+# IO-T003 brief: "Prometheus scrape → gateway /metrics").
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo, debug]
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

@@ -11,19 +11,26 @@ mkdir -p secrets
 
 if [[ -f secrets/postgres_password.txt && -f secrets/infergate_db_dsn.txt && -f secrets/infergate_key_pepper.txt ]]; then
   echo "dev secrets already present under compose/secrets/ — not regenerating (delete the directory to rotate)"
-  exit 0
+else
+  PGPASS="$(openssl rand -hex 24)"
+  PEPPER="$(openssl rand -hex 32)"
+
+  printf '%s' "$PGPASS" > secrets/postgres_password.txt
+  printf '%s' "$PEPPER" > secrets/infergate_key_pepper.txt
+  printf 'postgres://infergate:%s@postgres-dev:5432/infergate?sslmode=disable' "$PGPASS" > secrets/infergate_db_dsn.txt
+
+  chmod 600 secrets/postgres_password.txt
+  # world-readable: bind-mounted (not compose `secrets:`) into the gateway
+  # container, which reads them as its non-root `infergate` user (uid 100) —
+  # see docker-compose.yml's comment on the gateway service for why.
+  chmod 644 secrets/infergate_db_dsn.txt secrets/infergate_key_pepper.txt
+  echo "generated compose/secrets/{postgres_password,infergate_db_dsn,infergate_key_pepper}.txt"
 fi
 
-PGPASS="$(openssl rand -hex 24)"
-PEPPER="$(openssl rand -hex 32)"
-
-printf '%s' "$PGPASS" > secrets/postgres_password.txt
-printf '%s' "$PEPPER" > secrets/infergate_key_pepper.txt
-printf 'postgres://infergate:%s@postgres-dev:5432/infergate?sslmode=disable' "$PGPASS" > secrets/infergate_db_dsn.txt
-
-chmod 600 secrets/postgres_password.txt
-# world-readable: bind-mounted (not compose `secrets:`) into the gateway
-# container, which reads them as its non-root `infergate` user (uid 100) —
-# see docker-compose.yml's comment on the gateway service for why.
-chmod 644 secrets/infergate_db_dsn.txt secrets/infergate_key_pepper.txt
-echo "generated compose/secrets/{postgres_password,infergate_db_dsn,infergate_key_pepper}.txt"
+if [[ -f secrets/grafana_admin_password.txt ]]; then
+  echo "grafana admin password already present — not regenerating"
+else
+  openssl rand -hex 16 > secrets/grafana_admin_password.txt
+  chmod 644 secrets/grafana_admin_password.txt  # read by Grafana's container user via bind mount, same rationale as above
+  echo "generated compose/secrets/grafana_admin_password.txt"
+fi

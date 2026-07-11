@@ -6,6 +6,40 @@ Running log of notable events: surprises, ecosystem drift, fallbacks taken, cont
 
 ## Running log
 
+### 2026-07-11 — IO-T003 executed
+
+- OTel Collector, Prometheus, Grafana, Tempo added as compose services
+  (`compose/docker-compose.observability.yml`), all four pulled from Docker Hub by tag then
+  pinned by digest (probe report: this path works; GitHub release assets do not) — see
+  `docs/observability.md` §1 for the pins table.
+- **Topology implemented exactly as specced:** gateway `-trace-exporter=otlp` +
+  `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318` → collector (`compose/otel/otel-collector-config.yaml`,
+  otlp receiver → batch → otlp/tempo exporter) → Tempo; Prometheus scrapes `gateway:8080/metrics`
+  directly (`compose/prometheus/prometheus.yml`) — the collector is never in the metrics path, per
+  the IO-T003 brief and the architecture-diagram's two separate arrows.
+- **Exemplars:** confirmed the gateway's custom Prometheus registry
+  (`internal/telemetry/promreg.go`, read via `git show` — interface-understanding only, no source
+  copied) only emits OpenMetrics exemplars when the scraper's `Accept` header names
+  `application/openmetrics-text`; Prometheus negotiates this automatically once
+  `--enable-feature=exemplar-storage` is set (`docker-compose.observability.yml`, prometheus
+  command). Verified live: an exemplar on `inference_ttft_seconds_bucket` carried a real
+  `trace_id`, and that ID resolved via Tempo's `/api/traces/{id}` to a trace with the exact
+  `recv → queue.wait → upstream.connect → ttft → stream.relay → settle` span sequence and the
+  documented GenAI + platform attributes.
+- **Dashboard-as-code:** `dashboards/golden-dashboard.json`, provisioned into Grafana via
+  `compose/grafana/provisioning/{datasources,dashboards}` (file-based, not click-ops). All 11
+  Contract 2 canonical metric names appear on the dashboard — the doc's original 7-panel sketch
+  in `docs/observability.md` §3 only covered 10; added an explicit "in-flight requests" panel and
+  corrected the doc rather than silently leaving a canonical name off the dashboard.
+- **Verification:** `scripts/verify-observability.sh`, 16/16 passed — scrape-target health, all 11
+  metric names present with live series counts, exemplar → Tempo round-trip, Grafana dashboard
+  provisioning, and a live panel-query render through Grafana's datasource proxy. Evidence:
+  `scripts/evidence/observability-20260711T233804Z/`.
+- **Not yet exercised (explicitly out of this task's scope, deferred to IO-T008):** hypothesis H4
+  ("killing the observability stack changes gateway request success rate by 0") — this is the
+  observability-outage runbook's walkthrough per `docs/observability.md` §1, not an IO-T003 stop
+  condition.
+
 ### 2026-07-11 — IO-T002 executed (compose-pivot, RQ-14)
 
 - **Environment finding (see Deviations below):** this build environment cannot schedule any

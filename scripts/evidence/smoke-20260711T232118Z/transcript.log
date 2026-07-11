@@ -1,0 +1,59 @@
+== inferops smoke test — 2026-07-11T23:21:18+00:00 ==
+gateway: http://127.0.0.1:8080
+contracts bundle: /home/user/serving-contracts (v0.2.0, commit 484b449)
+
+-- selftest: contract bundle fixture sweep --
+schemas: 12 meta-validated against JSON Schema 2020-12: backend-capability, benchmark-result, benchmark-run, capacity-recommendation, cost-profile, deployment-contract, fault-scenario, hardware-profile, model-profile, raw-event, slo, workload
+
+selftest: 12 schemas meta-validated
+selftest: positives 52/52 passed
+selftest: negatives 29/29 failed-as-required
+selftest: GREEN
+PASS  kit selftest  (HTTP 0)
+
+-- GET /healthz --
+PASS  healthz  (HTTP 200)
+-- GET /readyz --
+PASS  readyz  (HTTP 200)
+-- GET /metrics --
+PASS  metrics reachable  (HTTP 200)
+-- GET /v1/models --
+PASS  models  (HTTP 200)
+PASS  /home/user/inferops/scripts/evidence/smoke-20260711T232118Z/models-response.json  [api.models-response]
+
+validate: 1/1 file(s) valid against 'api.models-response'
+PASS  schema:api.models-response  GET /v1/models
+-- POST /v1/chat/completions (non-stream, fixture: chat-completion-request.json) --
+PASS  non-stream chat completion  (HTTP 200)
+PASS  /home/user/inferops/scripts/evidence/smoke-20260711T232118Z/chat-completion-response.json  [api.chat-completion-response]
+
+validate: 1/1 file(s) valid against 'api.chat-completion-response'
+PASS  schema:api.chat-completion-response  non-stream response
+-- POST /v1/chat/completions (stream, fixture: chat-completion-request-stream.json) --
+PASS  stream chat completion  (HTTP 200)
+PASS  stream terminal sentinel  data: [DONE] present
+PASS  /home/user/inferops/scripts/evidence/smoke-20260711T232118Z/chat-completion-stream.sse  [api.stream-event]
+
+validate: 1/1 file(s) valid against 'api.stream-event'
+PASS  schema:api.stream-event  SSE transcript
+-- Error class: missing Authorization header --
+PASS  missing-auth -> 401  (HTTP 401)
+PASS  /home/user/inferops/scripts/evidence/smoke-20260711T232118Z/error-missing-auth.json  [api.error-response]
+
+validate: 1/1 file(s) valid against 'api.error-response'
+PASS  schema:api.error-response  missing-auth error envelope
+-- Error class: invalid API key --
+PASS  bad-auth -> 401  (HTTP 401)
+PASS  /home/user/inferops/scripts/evidence/smoke-20260711T232118Z/error-bad-auth.json  [api.error-response]
+
+validate: 1/1 file(s) valid against 'api.error-response'
+PASS  schema:api.error-response  bad-auth error envelope
+-- Error class: invalid request (missing model, fixture: invalid/request-missing-model.json) --
+PASS  invalid-request -> 400  (HTTP 400)
+PASS  /home/user/inferops/scripts/evidence/smoke-20260711T232118Z/error-invalid-request.json  [api.error-response]
+
+validate: 1/1 file(s) valid against 'api.error-response'
+PASS  schema:api.error-response  invalid-request error envelope
+
+== Summary: 17 passed, 0 failed ==
+Evidence directory: /home/user/inferops/scripts/evidence/smoke-20260711T232118Z

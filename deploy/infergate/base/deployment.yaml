@@ -1,0 +1,114 @@
+# Derived from deploy/infergate.deployment-contract.json (infergate v0.1.0,
+# commit 49236a3) — every probe/timing/resource value below is copied from
+# that descriptor, not invented. If a value here ever needs to differ from
+# the descriptor, that is a contract defect to file, not a local edit
+# (docs/scope.md, docs/testing.md "Human-review focus").
+#
+# NOT pod-scheduled in this environment (RQ-14 compose-pivot — see
+# docs/implementation-notes.md "Deviations"): validated with
+# `kubectl apply --dry-run=server` / a real (server-only) k3s API server —
+# clusters/local/validate-k3s.sh. The equivalent running workload is the
+# `gateway` service in compose/docker-compose.yml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infergate-gateway
+  labels:
+    app.kubernetes.io/name: infergate
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: infergate
+      app.kubernetes.io/component: gateway
+  # IO-T004: tuned so a rolling update under live load produces zero
+  # client-visible errors (scenario 12, hypothesis H1) — surge a new,
+  # not-yet-ready pod in before removing the old one; readinessProbe gates
+  # when the new pod actually joins the Service endpoints.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: infergate
+        app.kubernetes.io/component: gateway
+    spec:
+      # graceful_termination.termination_grace_period_seconds (contract) = 50,
+      # which is > max_stream_duration_seconds = 30 — the arithmetic the
+      # contract requires recorded (docs/testing.md "grace-period
+      # arithmetic"): 50s grace covers a 30s worst-case stream plus a 20s
+      # margin for the drain sequence's own bookkeeping (readiness flip +
+      # in-flight settle) observed in infergate's RELEASES.md docker-run
+      # SIGTERM smoke ("drain_timeout=35s" plus scheduling slack).
+      terminationGracePeriodSeconds: 50
+      containers:
+        - name: gateway
+          image: ghcr.io/duy-tung/infergate:0.1.0@sha256:1971426b393b3e00b30cac0690d38b31667b5e34ebbeb6e111a54c369fb54c7e
+          args:
+            - -addr=:8080
+            - -admin-addr=:8090
+            - -auth-mode=db
+            - -backend-url=http://infergate-mock-backend:8081
+            - -backend-name=mock
+            - -backend-health-path=/healthz
+            - -upstream-timeout=30s
+            - -drain-timeout=35s
+            - -trace-exporter=otlp
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: infergate-config
+          env:
+            # Secrets created out-of-band per docs/security.md §1 — never
+            # generated or committed by this kustomize base. See
+            # scripts/create-k8s-secrets.sh (reads compose/secrets/*.txt,
+            # itself gitignored).
+            - name: INFERGATE_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: usage-db-credentials
+                  key: dsn
+            - name: INFERGATE_KEY_PEPPER
+              valueFrom:
+                secretKeyRef:
+                  name: api-key-pepper
+                  key: pepper
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.observability.svc.cluster.local:4318
+          # Probe endpoints/timings copied verbatim from
+          # deploy/infergate.deployment-contract.json `probes`.
+          startupProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 20   # 40s worst-case warm-up budget (contract expected_warm_up_seconds=15, generous margin)
+          readinessProbe:
+            httpGet: { path: /readyz, port: 8080 }
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+            successThreshold: 1
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests: { cpu: "250m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "512Mi" }
+          # No `lifecycle.preStop` hook: deploy/infergate.deployment-contract.json
+          # `graceful_termination.pre_stop.action` is explicit that the
+          # container's default stop signal (SIGTERM) is sufficient —
+          # cmd/gateway/main.go's own SIGINT/SIGTERM handler performs the
+          # full drain sequence in-process (readiness flips false, new
+          # requests 503, accepted streams run to completion within
+          # -drain-timeout). Adding a preStop hook here would contradict the
+          # descriptor, not improve on it.

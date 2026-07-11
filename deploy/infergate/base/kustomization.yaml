@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+  - service.yaml
+
+# Non-secret operational metadata. Honesty note: under -auth-mode=db
+# (this deployment's reference mode per the deployment-contract descriptor)
+# the gateway's -models/-owned-by CLI flags are themselves documented as
+# "ignored with -auth-mode=db" (models/owners come from PostgreSQL via the
+# admin API instead — see scripts/bootstrap-dev-db.sh), so these entries are
+# NOT consumed as functional flags today; they are recorded here as the
+# content-hash-suffixed configMapGenerator groundwork IO-T010's config-rollout
+# mechanic (fault scenario 8) will build on, and as a human-readable record
+# of which deployment-contract revision this base was generated from.
+configMapGenerator:
+  - name: infergate-config
+    literals:
+      - DEPLOYMENT_CONTRACT_RELEASE=0.1.0
+      - UPSTREAM_TIMEOUT=30s
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: inferops
+    includeSelectors: false

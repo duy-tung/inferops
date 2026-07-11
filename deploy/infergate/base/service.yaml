@@ -1,0 +1,21 @@
+# ClusterIP only, api+metrics port (8080) — docs/security.md §4: the admin
+# surface (8090) is never published on the same Service as the data plane,
+# so it is deliberately absent here (the container itself still exposes it
+# for cluster-internal admin tooling, reached only by port-forward/exec,
+# never through this Service object).
+apiVersion: v1
+kind: Service
+metadata:
+  name: infergate-gateway
+  labels:
+    app.kubernetes.io/name: infergate
+    app.kubernetes.io/component: gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: infergate
+    app.kubernetes.io/component: gateway
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

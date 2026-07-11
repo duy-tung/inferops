@@ -1,0 +1,26 @@
+# Local CPU-cluster overlay (docs/architecture.md §2.1). Composes the three
+# IO-T002 bases into one applyable set, namespaced.
+#
+# IMPORTANT (RQ-14 compose-pivot, 2026-07-11): this build environment cannot
+# schedule Kubernetes pods (see /home/user/tools/k8s-env-probe-report.md and
+# docs/implementation-notes.md "Deviations"). This overlay is authored and
+# validated against a live k3s API server (`kubectl apply --dry-run=server`
+# and a real `kubectl apply` to etcd — clusters/local/validate-k3s.sh and
+# clusters/local/k3s-validation-output.txt) but its pods are never actually
+# scheduled here. The runtime stack that IS actually running is
+# compose/docker-compose.yml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: inferops-local
+
+resources:
+  - namespace.yaml
+  - ../../deploy/infergate/base
+  - ../../deploy/mock-backend/base
+  - ../../deploy/postgres-dev/base
+
+labels:
+  - pairs:
+      app.kubernetes.io/instance: local
+    includeSelectors: false

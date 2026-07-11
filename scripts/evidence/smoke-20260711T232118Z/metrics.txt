@@ -1,0 +1,114 @@
+# HELP inference_backend_healthy 1/0 per configured backend as judged by gateway health checking (static 1 until the health poller lands, IG-T012).
+# TYPE inference_backend_healthy gauge
+inference_backend_healthy{backend="mock"} 1
+# HELP inference_e2e_duration_seconds Start of the TTFT window to terminal outcome at the gateway, per request.
+# TYPE inference_e2e_duration_seconds histogram
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="0.25"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="0.5"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="1"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="2"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="4"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="8"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="15"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="30"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="60"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="120"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="300"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="600"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="mock",status_class="2xx",le="+Inf"} 2
+inference_e2e_duration_seconds_sum{model="unknown",backend="mock",status_class="2xx"} 0.285039832
+inference_e2e_duration_seconds_count{model="unknown",backend="mock",status_class="2xx"} 2
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="0.25"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="0.5"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="1"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="2"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="4"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="8"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="15"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="30"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="60"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="120"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="300"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="600"} 1
+inference_e2e_duration_seconds_bucket{model="unknown",backend="unknown",status_class="4xx",le="+Inf"} 1
+inference_e2e_duration_seconds_sum{model="unknown",backend="unknown",status_class="4xx"} 3.6767e-05
+inference_e2e_duration_seconds_count{model="unknown",backend="unknown",status_class="4xx"} 1
+# HELP inference_itl_seconds Inter-chunk gap between consecutive content-bearing stream chunks, measured at the gateway on upstream reads.
+# TYPE inference_itl_seconds histogram
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="0.005"} 0
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="0.01"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="0.02"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="0.04"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="0.08"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="0.15"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="0.3"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="0.6"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="1"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="2"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="5"} 18
+inference_itl_seconds_bucket{model="unknown",backend="mock",le="+Inf"} 18
+inference_itl_seconds_sum{model="unknown",backend="mock"} 0.152210075
+inference_itl_seconds_count{model="unknown",backend="mock"} 18
+# HELP inference_queue_depth Admission queue depth per tenant tier, updated live by internal/admission (IG-T010) as tickets enter/leave a queue.
+# TYPE inference_queue_depth gauge
+inference_queue_depth{tenant_tier="default"} 0
+# HELP inference_queue_wait_seconds Admission-enqueue to dispatch wait, as measured by internal/admission (IG-T010); 0 when a dispatch slot was free immediately.
+# TYPE inference_queue_wait_seconds histogram
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="0.001"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="0.0025"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="0.005"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="0.01"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="0.025"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="0.05"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="0.1"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="0.25"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="0.5"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="1"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="2.5"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="5"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="10"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="30"} 2
+inference_queue_wait_seconds_bucket{tenant_tier="default",le="+Inf"} 2
+inference_queue_wait_seconds_sum{tenant_tier="default"} 4.0427e-05
+inference_queue_wait_seconds_count{tenant_tier="default"} 2
+# HELP inference_requests_in_flight Requests currently dispatched to a backend and not yet settled.
+# TYPE inference_requests_in_flight gauge
+inference_requests_in_flight{backend="mock"} 0
+# HELP inference_requests_total Requests by terminal outcome, incremented once per request at settle time (error_class="none" for successes).
+# TYPE inference_requests_total counter
+inference_requests_total{model="unknown",backend="mock",tenant_tier="default",status_class="2xx",error_class="none"} 2
+inference_requests_total{model="unknown",backend="unknown",tenant_tier="default",status_class="4xx",error_class="invalid_request"} 1
+inference_requests_total{model="unknown",backend="unknown",tenant_tier="unknown",status_class="4xx",error_class="authentication"} 2
+# HELP inference_retries_total Upstream retries; stage has exactly one legal value, pre_first_token (0 until the retry budget lands, IG-T013).
+# TYPE inference_retries_total counter
+inference_retries_total{stage="pre_first_token"} 0
+# HELP inference_sheds_total Admission rejections by reason: queue_full/global_overload from internal/admission (IG-T010), tenant_rate_limit from internal/quota (IG-T009), backend_unavailable reserved for routing (IG-T012).
+# TYPE inference_sheds_total counter
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 0
+inference_sheds_total{reason="tenant_rate_limit"} 0
+# HELP inference_ttft_seconds Gateway TTFT: complete client request read to first upstream response body byte at the gateway.
+# TYPE inference_ttft_seconds histogram
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="0.025"} 1
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="0.05"} 1
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="0.1"} 1
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="0.2"} 2
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="0.4"} 2
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="0.8"} 2
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="1.5"} 2
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="3"} 2
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="6"} 2
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="12"} 2
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="30"} 2
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="60"} 2
+inference_ttft_seconds_bucket{model="unknown",backend="mock",le="+Inf"} 2
+inference_ttft_seconds_sum{model="unknown",backend="mock"} 0.132157732
+inference_ttft_seconds_count{model="unknown",backend="mock"} 2
+# HELP inference_usage_tokens_total Settled billable tokens (tokens emitted before cancellation are billable).
+# TYPE inference_usage_tokens_total counter
+inference_usage_tokens_total{direction="input",model="unknown",tenant_tier="default"} 31
+inference_usage_tokens_total{direction="output",model="unknown",tenant_tier="default"} 31
+# HELP infergate_usage_writer_backlog_dropped_total Usage records dropped because the async ledger writer's bounded backlog was full (the request path is never blocked or failed by this; docs/usage-invariants.md §3).
+# TYPE infergate_usage_writer_backlog_dropped_total counter
+infergate_usage_writer_backlog_dropped_total{reason="overflow"} 0

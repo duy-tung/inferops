@@ -1,0 +1,71 @@
+# Dev-grade only (docs/architecture.md §2.3 "StatefulSet ... dev-grade only,
+# documented as such; never exposed outside the cluster"). Not pod-scheduled
+# in this environment (RQ-14 compose-pivot); validated via
+# clusters/local/validate-k3s.sh. The running equivalent is the
+# `postgres-dev` service in compose/docker-compose.yml.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-dev
+  labels:
+    app.kubernetes.io/name: postgres-dev
+    app.kubernetes.io/component: database
+spec:
+  serviceName: postgres-dev
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-dev
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres-dev
+        app.kubernetes.io/component: database
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: postgres
+          image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: infergate
+            - name: POSTGRES_DB
+              value: infergate
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                # Created out-of-band per docs/security.md §1 — never
+                # committed. See scripts/create-k8s-secrets.sh.
+                secretKeyRef:
+                  name: usage-db-credentials
+                  key: postgres-password
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "infergate", "-d", "infergate"]
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "infergate", "-d", "infergate"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

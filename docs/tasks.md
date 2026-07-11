@@ -20,6 +20,12 @@ Critical path: **IO-T002 → IO-T003 → IO-T004 → IO-T005 → I5 → IO-T006 
 
 ## IO-T002 — Local cluster baseline
 
+- **Status: DONE (2026-07-11).** Compose-pivot (RQ-14, see `docs/implementation-notes.md`
+  Deviations D-1): runtime stack on docker compose (`compose/docker-compose.yml`); Kustomize base
+  authored (`deploy/{infergate,mock-backend,postgres-dev}/base`, `clusters/local`) and validated
+  against a live k3s API server (`clusters/local/validate-k3s.sh`,
+  `clusters/local/evidence/k3s-validation-20260711.txt`). Smoke: `scripts/smoke.sh`, 17/17 passed
+  (`scripts/evidence/smoke-20260711T232118Z/`).
 - **Goal/Repo:** kind/k3s cluster running released infergate + mock backend + dev PostgreSQL, deployed by digest per the deployment contract. inferops.
 - **Requirement:** no source checkouts anywhere; manifests derived from the deployment-contract descriptor; images pinned by digest; smoke test drives the in-cluster gateway with contract fixtures (stream + non-stream + error classes).
 - **Dependencies:** IO-T001; infergate release (IG-T016); contracts deployment/fault schemas (SC-T006).

@@ -1,0 +1,166 @@
+####################################################################
+# inferops — compose baseline (IO-T002)
+#
+# RQ-14 compose-pivot (2026-07-11, user-approved; see docs/implementation-notes.md
+# "Deviations"): this build environment cannot schedule Kubernetes pods (missing
+# CAP_SYS_RESOURCE at the runc/nsexec layer — proven in
+# /home/user/tools/k8s-env-probe-report.md). The *runtime* operational stack
+# therefore runs on docker compose, deploying infergate's RELEASED images
+# (pinned by digest, per deploy/infergate.deployment-contract.json and
+# deploy/mock-backend.deployment-contract.json). Kustomize manifests for the
+# same workloads are authored separately (deploy/*/base, clusters/local) and
+# validated against a real k3s API server — see clusters/local/validate-k3s.sh.
+#
+# No component source is checked out to build these images: the gateway and
+# mock-backend images are the exact digests infergate's v0.1.0 release
+# (RELEASES.md, commit 49236a3) recorded, reproduced via `git archive 49236a3`
+# + the release commit's own Dockerfile/Dockerfile.mock-backend (an explicitly
+# authorized release-artifact-consumption path — no other infergate source is
+# read to run this stack). See scripts/build-released-images.sh.
+####################################################################
+
+name: inferops
+
+networks:
+  inferops-net:
+    name: inferops-net
+
+volumes:
+  postgres-dev-data:
+
+services:
+  postgres-dev:
+    # Dev-grade PostgreSQL only (docs/architecture.md §2.3, docs/security.md §4).
+    # Never published beyond the compose network except a loopback-bound port
+    # opened only for the one-shot bootstrap (migrate) step — see
+    # scripts/bootstrap-dev-db.sh, which tears the mapping intent down to
+    # "operator-loopback-only", matching the intent of "never exposed outside
+    # the cluster" in a single-host compose topology.
+    image: postgres@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+    container_name: inferops-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: infergate
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: infergate
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    ports:
+      # Loopback-only, bootstrap-time access for scripts/bootstrap-dev-db.sh
+      # (the released images have no migrate tool baked in, so the schema is
+      # applied from the host via the infergate release commit's cmd/migrate,
+      # built out-of-band — see that script's header comment). Never bound to
+      # 0.0.0.0.
+      - "127.0.0.1:15433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U infergate -d infergate"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks:
+      - inferops-net
+
+  mock-backend:
+    # deploy/mock-backend.deployment-contract.json: image+digest, ports, probes.
+    image: infergate-mock-backend@sha256:d7df3d5609daa85adef6a07e4471c8bb90f5e2472f0bf3b32deb2fa9efb547e2
+    container_name: inferops-mock-backend
+    restart: unless-stopped
+    command:
+      - "-addr=:8081"
+      - "-seed=42"
+      - "-ttft=20ms"
+      - "-itl=8ms"
+      - "-error-rate=0"
+    healthcheck:
+      # contract: startup probe /healthz, period 1s, failure_threshold 5
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/healthz"]
+      interval: 1s
+      timeout: 1s
+      retries: 5
+    # contract graceful_termination: SIGTERM, hard-coded 5s Shutdown() timeout
+    # in the binary; termination_grace_period_seconds=10 (>5s margin).
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+    networks:
+      - inferops-net
+
+  gateway:
+    # deploy/infergate.deployment-contract.json: image+digest, ports 8080
+    # (api+metrics), env (secrets below), probes, graceful_termination.
+    image: infergate@sha256:1971426b393b3e00b30cac0690d38b31667b5e34ebbeb6e111a54c369fb54c7e
+    container_name: inferops-gateway
+    profiles: ["app"]  # started explicitly, after migrate has run (see scripts/bootstrap-dev-db.sh)
+    restart: unless-stopped
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+      mock-backend:
+        condition: service_healthy
+    environment:
+      # Reference launch args per the deployment-contract descriptor's `notes`
+      # field (-auth-mode=db is the documented reference deployment).
+      INFERGATE_DB_DSN_FILE: /run/secrets/infergate_db_dsn   # read by the entrypoint wrapper below
+      INFERGATE_KEY_PEPPER_FILE: /run/secrets/infergate_key_pepper
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    # cmd/gateway reads INFERGATE_DB_DSN / INFERGATE_KEY_PEPPER as plain env
+    # vars (no file:// support) — the entrypoint shim exports them from the
+    # mounted secret files without ever printing them, then execs the
+    # released binary unmodified. This is the compose analogue of a
+    # Kubernetes Secret volume + env-from-file; see docs/security.md §1
+    # ("no secrets in manifests or git" — the secret *files* live only in
+    # compose/secrets/, gitignored, generated by scripts/gen-dev-secrets.sh).
+    #
+    # Plain read-only bind mounts, not the top-level `secrets:` construct:
+    # this compose engine ignores the `uid`/`gid`/`mode` overrides on
+    # file-based secrets (confirmed: "secrets `uid`, `gid` and `mode` are
+    # not supported, they will be ignored") and always mounts them
+    # root:root 0600, unreadable by the image's non-root `infergate` user
+    # (uid 100). A bind mount preserves the host file's own permissions
+    # instead, so gen-dev-secrets.sh writes these two files world-readable
+    # (0644) — acceptable for dev-grade, gitignored, single-operator-sandbox
+    # material; the DB password itself stays 0600 (only root-run entrypoints
+    # — postgres's own init script — ever read it).
+    volumes:
+      - ./secrets/infergate_db_dsn.txt:/run/secrets/infergate_db_dsn:ro
+      - ./secrets/infergate_key_pepper.txt:/run/secrets/infergate_key_pepper:ro
+    entrypoint: ["/bin/sh", "-c"]
+    # Given as a one-element YAML *list* (not a plain string) so compose
+    # passes it through verbatim as the single `-c` script argument — a
+    # plain multi-line string scalar here would get shell-word-split by
+    # compose before it ever reaches /bin/sh, breaking the script (verified
+    # against this repo's `docker compose config` output).
+    command:
+      - >-
+        export INFERGATE_DB_DSN="$$(cat "$$INFERGATE_DB_DSN_FILE")" &&
+        export INFERGATE_KEY_PEPPER="$$(cat "$$INFERGATE_KEY_PEPPER_FILE")" &&
+        exec /usr/local/bin/gateway
+        -addr=:8080
+        -admin-addr=:8090
+        -auth-mode=db
+        -backend-url=http://mock-backend:8081
+        -backend-name=mock
+        -backend-health-path=/healthz
+        -upstream-timeout=30s
+        -drain-timeout=35s
+        -trace-exporter=otlp
+    ports:
+      # Public inference API only (Contract 1 smoke surface). Admin (8090)
+      # and /metrics stay unpublished to the host — reachable only inside
+      # inferops-net, matching docs/security.md §4 ("admin surface and all
+      # /metrics endpoints stay in-cluster"). Prometheus scrapes :8080/metrics
+      # over the compose network (IO-T003), not via a published host port.
+      - "8080:8080"
+    # graceful_termination: preStop = SIGTERM (gateway's own signal handler
+    # drains in-process); termination_grace_period_seconds=50 >
+    # max_stream_duration_seconds=30 (arithmetic recorded in
+    # deploy/infergate/base/deployment.yaml and docs/testing.md).
+    stop_signal: SIGTERM
+    stop_grace_period: 50s
+    networks:
+      - inferops-net
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt

@@ -1,0 +1,64 @@
+# Derived from deploy/mock-backend.deployment-contract.json (infergate
+# v0.1.0, commit 49236a3). Not pod-scheduled in this environment (RQ-14
+# compose-pivot); validated via clusters/local/validate-k3s.sh. The running
+# equivalent is the `mock-backend` service in compose/docker-compose.yml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infergate-mock-backend
+  labels:
+    app.kubernetes.io/name: infergate-mock-backend
+    app.kubernetes.io/component: mock-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: infergate-mock-backend
+      app.kubernetes.io/component: mock-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: infergate-mock-backend
+        app.kubernetes.io/component: mock-backend
+    spec:
+      # contract: termination_grace_period_seconds=10 (>5s hard-coded
+      # Shutdown() timeout in the binary, per the contract's own
+      # "known limitation" note).
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: mock-backend
+          image: ghcr.io/duy-tung/infergate-mock-backend:0.1.0@sha256:d7df3d5609daa85adef6a07e4471c8bb90f5e2472f0bf3b32deb2fa9efb547e2
+          args:
+            - -addr=:8081
+            - -seed=42
+            - -ttft=20ms
+            - -itl=8ms
+            - -error-rate=0
+          ports:
+            - name: http
+              containerPort: 8081
+          startupProbe:
+            httpGet: { path: /healthz, port: 8081 }
+            periodSeconds: 1
+            timeoutSeconds: 1
+            failureThreshold: 5
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8081 }
+            periodSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 2
+            successThreshold: 1
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8081 }
+            initialDelaySeconds: 2
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests: { cpu: "100m", memory: "64Mi" }
+            limits: { cpu: "500m", memory: "128Mi" }
+          # No preStop hook: contract states the mock is a synthetic
+          # test/CI fixture with no /readyz to flip false first — SIGTERM ->
+          # http.Server.Shutdown with its own 5s hard-coded bound is judged
+          # adequate for its (non-production) role. Inventing a preStop hook
+          # here would contradict that explicit descriptor judgment.

@@ -4,7 +4,7 @@ All integration happens through the pinned `serving-contracts` bundle, released 
 
 ## Pinned contract bundle
 
-- **Bundle:** `serving-contracts`, pinned by SemVer tag. **Current pin: _not yet set_** — the first released bundle tag (expected `v0.1.x`, containing the deployment and fault-scenario schemas from SC-T005/SC-T006) is recorded here and in the manifests when IO-T002 starts. CI validates against the bundle's golden fixtures.
+- **Bundle:** `serving-contracts`, pinned by SemVer tag. **Current pin: `v0.2.0` (commit `484b449`)**, set at IO-T002 (2026-07-11) — matches infergate v0.1.0's own re-pin (RELEASES.md). Contains the deployment-contract and fault-scenario schemas (SC-T006) used from this task onward. CI validates against the bundle's golden fixtures (`scripts/smoke.sh` runs `kit/contracts-validate.py selftest` every invocation).
 - Pre-1.0 rule: during `v0.x`, MINOR may break with an explicit migration note. Every bundle bump re-runs the contract-fixture smoke test.
 
 ## Contracts consumed

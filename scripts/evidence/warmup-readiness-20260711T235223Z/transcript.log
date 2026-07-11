@@ -1,0 +1,54 @@
+== inferops warm-up-aware readiness test — 2026-07-11T23:52:23+00:00 ==
+simulated startupProbe budget: period=2s x failure_threshold=10 = 20s
+injected mock-backend startup delay: 12s
+
+-- replacing mock-backend with a delayed-start instance (same released image+digest) --
+ Container inferops-mock-backend Stopping 
+ Container inferops-mock-backend Stopped 
+Going to remove inferops-mock-backend
+ Container inferops-mock-backend Removing 
+ Container inferops-mock-backend Removed 
+1ea9072f90ff3405d94bf0965fb9f0d999f26ba401da2ee85c23bda57615cb33
+delayed mock-backend container started at 2026-07-11T23:52:23+00:00
+
+-- sending a client request early in the delay window (t~3s, well before the 12s delay ends) --
+request at t=3s (backend still warming) -> HTTP 503
+{"error":{"message":"No healthy backend is currently available; retry after the window indicated.","type":"overloaded","code":null,"param":"backend_unavailable","request_id":"req_8a1b03b7197d23765773d73e224a1205"}}
+
+-- gateway's own view at this same moment: inference_backend_healthy{backend="mock"} --
+inference_backend_healthy{backend=mock} = 0
+
+-- polling mock-backend's own /healthz at the simulated startupProbe cadence --
+t=3s: /healthz -> 000 (still warming; simulated failure #1)
+t=5s: /healthz -> 000 (still warming; simulated failure #2)
+t=8s: /healthz -> 000 (still warming; simulated failure #3)
+t=10s: /healthz -> 000 (still warming; simulated failure #4)
+t=12s: /healthz -> 000 (still warming; simulated failure #5)
+t=14s: /healthz -> 200 (backend up)
+
+-- gateway's own view: inference_backend_healthy{backend="mock"} after the backend came up --
+inference_backend_healthy{backend=mock} = 0
+inference_backend_healthy{backend=mock} = 0
+inference_backend_healthy{backend=mock} = 1
+
+-- waiting for mock-backend to be fully warm, then confirming requests succeed --
+request after warm-up -> HTTP 200
+
+-- mock-backend container RestartCount: 0 --
+
+== Verdicts ==
+PASS  /healthz failed at least once before the backend came up (5 simulated failures) — readiness was genuinely false during warm-up
+PASS  backend became healthy at t=14s, within the simulated 10x2s=20s startup budget — a real startupProbe would never have failed the pod
+PASS  the request sent during/around warm-up got a definitive non-2xx (503), not a silent success or a hang
+PASS  a request sent after warm-up completed succeeds normally (HTTP 200)
+PASS  mock-backend's RestartCount is 0 — this was a startup delay, not a crash-restart loop
+
+5 passed, 0 failed. Evidence directory: /home/user/inferops/scripts/evidence/warmup-readiness-20260711T235223Z
+
+-- restoring the normal compose-managed mock-backend --
+time="2026-07-11T23:52:47Z" level=warning msg="Found orphan containers ([inferops-haproxy inferops-gateway-a inferops-gateway-b inferops-grafana inferops-otel-collector inferops-prometheus inferops-tempo]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container inferops-mock-backend Creating 
+ Container inferops-mock-backend Created 
+ Container inferops-mock-backend Starting 
+ Container inferops-mock-backend Started 
+restored mock-backend health: healthy

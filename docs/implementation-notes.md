@@ -6,6 +6,56 @@ Running log of notable events: surprises, ecosystem drift, fallbacks taken, cont
 
 ## Running log
 
+### 2026-07-11 — IO-T004 executed
+
+- **Topology:** `compose/docker-compose.lifecycle.yml` adds two named gateway replicas
+  (`gateway-a`, `gateway-b`) behind `haproxy` (`compose/haproxy/haproxy.cfg`) — compose's stand-in
+  for a Kubernetes Service + endpoint controller, since compose itself has no built-in load
+  balancer. haproxy health-checks each replica's own `/readyz` (`inter 500ms fall 1 rise 2`) and
+  uses `retry-on 503 + option redispatch` to transparently retry a request that lands on a
+  just-started-draining replica against the other one — closing the gap between "readiness flips
+  false" and "haproxy's polling notices," which in a real cluster is instead closed by the
+  endpoint controller reacting to the readinessProbe result directly.
+- **Finding (recorded, not worked around): the v0.1.0 gateway's `-auth-mode=db` startup has no
+  internal retry.** `config.OpenDBStore` (read via `git show`, interface-understanding only) does
+  one `PingContext` + one `Reload`; either failing returns an error and `main()` calls
+  `os.Exit(2)` — there is no backoff/retry loop. This means the deployment-contract's
+  `expected_warm_up_seconds=15` / startup budget (40s) describe the time this one-shot sequence
+  takes to *complete*, not a window during which the process internally waits for a not-yet-ready
+  PostgreSQL. Practically: **PostgreSQL must already be reachable with its schema migrated before
+  the gateway container starts** (exactly what `scripts/bootstrap-dev-db.sh`'s ordering already
+  does) — an orchestrator relying on crash-restart-until-DB-is-up would produce real restarts, not
+  a graceful wait. Filed here as a candidate documentation-accuracy note for
+  `deploy/infergate.deployment-contract.json`'s `warm_signal` prose (which reads as if the
+  backend-health probe gates warm-up too — it doesn't meaningfully: `route.Router.Start`'s initial
+  probe is a single ~150ms-bounded attempt, non-blocking on failure). Not filed as a blocking
+  contract defect: the *practical* guidance (ensure DB reachability first) is exactly what this
+  repo's own compose ordering does, and the descriptor already says as much in its own "known
+  limitation" sentence.
+- **Finding: mock-backend caps completion length at 256 tokens regardless of
+  `max_completion_tokens`** (`internal/mockengine/engine.go`, `cap > 256 { cap = 256 }`) — a
+  released-behavior fact discovered while sizing the drain test's in-flight stream, recorded rather
+  than assumed away. At this release's `-itl=8ms`, the longest possible deterministic stream is
+  ~2.05s; `scripts/drain-test.sh` uses this to time its SIGTERM precisely mid-stream rather than
+  assuming an arbitrarily long request was available.
+- **Warm-up-aware readiness test design choice:** the mock-backend's own shipped
+  deployment-contract descriptor declares a trivial 5s startup budget (it genuinely starts
+  instantly) — using it as-is would make any injected delay longer than 5s look like a contract
+  violation. `scripts/warmup-readiness-test.sh` therefore defines its own simulated startupProbe
+  budget (period=2s × threshold=10 = 20s), explicitly standing in for what a real llama.cpp/vLLM
+  engine's probe config would look like (docs/architecture.md §2.3), and injects a 12s delay
+  within it — consistent with "on the CPU path, slow warm-up is simulated via mock/llama.cpp
+  startup delay" (architecture.md §3).
+- **Results:** `scripts/rolling-update-test.sh` 0 client-visible errors (27 short + 3 long-stream
+  requests across both replicas' rolls); `scripts/warmup-readiness-test.sh` 5/5; `scripts/drain-test.sh`
+  3/3. Full detail and exact numbers in `docs/testing.md` Tier 2. Evidence:
+  `scripts/evidence/{rolling-update,warmup-readiness,drain-test}-*/`.
+- **PDB + replica count:** `deploy/infergate/base/deployment.yaml` bumped to `replicas: 2` (to
+  match the topology actually exercised) with a `PodDisruptionBudget` (`minAvailable: 1`,
+  `deploy/infergate/base/pdb.yaml`) added to the Kustomize base; re-validated against the live k3s
+  API server alongside the IO-T002 manifests (`clusters/local/evidence/k3s-validation-20260711.txt`,
+  refreshed — now 9 rendered objects, PDB created, Deployment scaled 1→2 observed live in etcd).
+
 ### 2026-07-11 — IO-T003 executed
 
 - OTel Collector, Prometheus, Grafana, Tempo added as compose services

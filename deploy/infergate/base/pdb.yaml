@@ -1,0 +1,21 @@
+# IO-T004: PodDisruptionBudget for the gateway (docs/architecture.md §3
+# "Rolling updates + disruption"). minAvailable: 1 out of 2 replicas — pairs
+# with the Deployment's RollingUpdate strategy (maxUnavailable: 0,
+# maxSurge: 1) so a voluntary disruption (node drain, rolling update) can
+# never take both replicas down at once; combined with the drain-correct
+# lifecycle (preStop/SIGTERM handling, deploy/infergate.deployment-contract.json),
+# this is the mechanism scripts/rolling-update-test.sh's compose analog
+# demonstrated producing zero client-visible errors.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: infergate-gateway
+  labels:
+    app.kubernetes.io/name: infergate
+    app.kubernetes.io/component: gateway
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: infergate
+      app.kubernetes.io/component: gateway

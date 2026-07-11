@@ -17,7 +17,11 @@ metadata:
     app.kubernetes.io/name: infergate
     app.kubernetes.io/component: gateway
 spec:
-  replicas: 1
+  # Multi-replica capable (docs/architecture.md §2.3). 2 replicas matches the
+  # topology actually exercised by scripts/rolling-update-test.sh's compose
+  # analog (gateway-a/gateway-b behind haproxy) — see
+  # docs/implementation-notes.md's IO-T004 log entry for the live-load result.
+  replicas: 2
   revisionHistoryLimit: 3
   selector:
     matchLabels:

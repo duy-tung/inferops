@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - deployment.yaml
   - service.yaml
+  - pdb.yaml
 
 # Non-secret operational metadata. Honesty note: under -auth-mode=db
 # (this deployment's reference mode per the deployment-contract descriptor)

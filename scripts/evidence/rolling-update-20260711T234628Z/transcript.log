@@ -1,0 +1,60 @@
+== inferops rolling-update-under-load test — 2026-07-11T23:46:28+00:00 ==
+-- ensuring gateway-a, gateway-b, haproxy are up --
+time="2026-07-11T23:46:28Z" level=warning msg="Found orphan containers ([inferops-grafana inferops-otel-collector inferops-prometheus inferops-tempo]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container inferops-mock-backend Running 
+ Container inferops-postgres-dev Running 
+ Container inferops-gateway-b Running 
+ Container inferops-gateway-a Running 
+ Container inferops-haproxy Running 
+ Container inferops-mock-backend Waiting 
+ Container inferops-postgres-dev Waiting 
+ Container inferops-postgres-dev Waiting 
+ Container inferops-mock-backend Waiting 
+ Container inferops-postgres-dev Healthy 
+ Container inferops-postgres-dev Healthy 
+ Container inferops-mock-backend Healthy 
+ Container inferops-mock-backend Healthy 
+haproxy /readyz through LB: 200
+-- load generators started (short: pid 907, stream: pid 908) --
+
+-- rolling update: draining gateway-a (docker compose stop, SIGTERM, grace 50s) --
+ Container inferops-gateway-a Stopping 
+ Container inferops-gateway-a Stopped 
+gateway-a drained+stopped in 1s
+-- starting replacement gateway-a (same released digest — see header note) --
+time="2026-07-11T23:46:32Z" level=warning msg="Found orphan containers ([inferops-grafana inferops-otel-collector inferops-prometheus inferops-tempo]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container inferops-mock-backend Running 
+ Container inferops-postgres-dev Running 
+ Container inferops-mock-backend Waiting 
+ Container inferops-postgres-dev Waiting 
+ Container inferops-postgres-dev Healthy 
+ Container inferops-mock-backend Healthy 
+ Container inferops-gateway-a Starting 
+ Container inferops-gateway-a Started 
+gateway-a ready again (readyz=200)
+
+-- rolling update: draining gateway-b (docker compose stop, SIGTERM, grace 50s) --
+ Container inferops-gateway-b Stopping 
+ Container inferops-gateway-b Stopped 
+gateway-b drained+stopped in 0s
+-- starting replacement gateway-b (same released digest — see header note) --
+time="2026-07-11T23:46:35Z" level=warning msg="Found orphan containers ([inferops-grafana inferops-otel-collector inferops-prometheus inferops-tempo]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container inferops-mock-backend Running 
+ Container inferops-postgres-dev Running 
+ Container inferops-postgres-dev Waiting 
+ Container inferops-mock-backend Waiting 
+ Container inferops-postgres-dev Healthy 
+ Container inferops-mock-backend Healthy 
+ Container inferops-gateway-b Starting 
+ Container inferops-gateway-b Started 
+gateway-b ready again (readyz=200)
+
+-- stopping load generators --
+
+== Results ==
+short (non-stream) requests: 27 total, 0 client-visible errors (non-2xx)
+long-running SSE streams:    3 total, 0 client-visible errors (non-2xx OR missing terminal [DONE])
+
+VERDICT: zero client-visible errors during the rolling update (hypothesis H1 confirmed)
+
+Evidence directory: /home/user/inferops/scripts/evidence/rolling-update-20260711T234628Z

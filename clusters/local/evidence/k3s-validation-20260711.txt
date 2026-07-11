@@ -1,5 +1,5 @@
 == starting k3s (server-only, --disable-agent: no kubelet, no pod scheduling) ==
-k3s server starting (pid 16591), waiting for API to come up...
+k3s server starting (pid 18547), waiting for API to come up...
 
 == kubectl get --raw /healthz ==
 ok
@@ -10,7 +10,7 @@ Server Version: v1.30.4+k3s1
 Warning: version difference between client (1.36) and server (1.30) exceeds the supported minor version skew of +/-1
 
 == kustomize build clusters/local (schema/render check) ==
-rendered 8 objects, 0 build errors
+rendered 9 objects, 0 build errors
 
 == kubectl apply -k clusters/local (real apply to etcd) ==
 namespace/inferops-local unchanged
@@ -18,9 +18,10 @@ configmap/infergate-config-m5fdfb2dbc unchanged
 service/infergate-gateway unchanged
 service/infergate-mock-backend unchanged
 service/postgres-dev unchanged
-deployment.apps/infergate-gateway unchanged
+deployment.apps/infergate-gateway configured
 deployment.apps/infergate-mock-backend unchanged
 statefulset.apps/postgres-dev configured
+poddisruptionbudget.policy/infergate-gateway created
 
 == kubectl apply --dry-run=server -k clusters/local (re-run: server-side admission + schema re-validation) ==
 namespace/inferops-local unchanged (server dry run)
@@ -31,39 +32,44 @@ service/postgres-dev unchanged (server dry run)
 deployment.apps/infergate-gateway unchanged (server dry run)
 deployment.apps/infergate-mock-backend unchanged (server dry run)
 statefulset.apps/postgres-dev configured (server dry run)
+poddisruptionbudget.policy/infergate-gateway configured (server dry run)
 
 == kubectl get all -n inferops-local -o wide (expect all pods Pending — zero Nodes registered) ==
 NAME                                         READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
-pod/infergate-gateway-548d48788-r2pzl        0/1     Pending   0          34s   <none>   <none>   <none>           <none>
-pod/infergate-mock-backend-d8cd94bc6-tkhbh   0/1     Pending   0          34s   <none>   <none>   <none>           <none>
-pod/postgres-dev-0                           0/1     Pending   0          34s   <none>   <none>   <none>           <none>
+pod/infergate-gateway-548d48788-ch2dp        0/1     Pending   0          1s    <none>   <none>   <none>           <none>
+pod/infergate-gateway-548d48788-r2pzl        0/1     Pending   0          25m   <none>   <none>   <none>           <none>
+pod/infergate-mock-backend-d8cd94bc6-tkhbh   0/1     Pending   0          25m   <none>   <none>   <none>           <none>
+pod/postgres-dev-0                           0/1     Pending   0          25m   <none>   <none>   <none>           <none>
 
 NAME                             TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE   SELECTOR
-service/infergate-gateway        ClusterIP   10.43.165.40   <none>        8080/TCP   49s   app.kubernetes.io/component=gateway,app.kubernetes.io/name=infergate
-service/infergate-mock-backend   ClusterIP   10.43.71.183   <none>        8081/TCP   49s   app.kubernetes.io/component=mock-backend,app.kubernetes.io/name=infergate-mock-backend
-service/postgres-dev             ClusterIP   None           <none>        5432/TCP   49s   app.kubernetes.io/component=database,app.kubernetes.io/name=postgres-dev
+service/infergate-gateway        ClusterIP   10.43.165.40   <none>        8080/TCP   25m   app.kubernetes.io/component=gateway,app.kubernetes.io/name=infergate
+service/infergate-mock-backend   ClusterIP   10.43.71.183   <none>        8081/TCP   25m   app.kubernetes.io/component=mock-backend,app.kubernetes.io/name=infergate-mock-backend
+service/postgres-dev             ClusterIP   None           <none>        5432/TCP   25m   app.kubernetes.io/component=database,app.kubernetes.io/name=postgres-dev
 
 NAME                                     READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS     IMAGES                                                                                                                  SELECTOR
-deployment.apps/infergate-gateway        0/1     1            0           49s   gateway        ghcr.io/duy-tung/infergate:0.1.0@sha256:1971426b393b3e00b30cac0690d38b31667b5e34ebbeb6e111a54c369fb54c7e                app.kubernetes.io/component=gateway,app.kubernetes.io/name=infergate
-deployment.apps/infergate-mock-backend   0/1     1            0           49s   mock-backend   ghcr.io/duy-tung/infergate-mock-backend:0.1.0@sha256:d7df3d5609daa85adef6a07e4471c8bb90f5e2472f0bf3b32deb2fa9efb547e2   app.kubernetes.io/component=mock-backend,app.kubernetes.io/name=infergate-mock-backend
+deployment.apps/infergate-gateway        0/2     2            0           25m   gateway        ghcr.io/duy-tung/infergate:0.1.0@sha256:1971426b393b3e00b30cac0690d38b31667b5e34ebbeb6e111a54c369fb54c7e                app.kubernetes.io/component=gateway,app.kubernetes.io/name=infergate
+deployment.apps/infergate-mock-backend   0/1     1            0           25m   mock-backend   ghcr.io/duy-tung/infergate-mock-backend:0.1.0@sha256:d7df3d5609daa85adef6a07e4471c8bb90f5e2472f0bf3b32deb2fa9efb547e2   app.kubernetes.io/component=mock-backend,app.kubernetes.io/name=infergate-mock-backend
 
 NAME                                               DESIRED   CURRENT   READY   AGE   CONTAINERS     IMAGES                                                                                                                  SELECTOR
-replicaset.apps/infergate-gateway-548d48788        1         1         0       34s   gateway        ghcr.io/duy-tung/infergate:0.1.0@sha256:1971426b393b3e00b30cac0690d38b31667b5e34ebbeb6e111a54c369fb54c7e                app.kubernetes.io/component=gateway,app.kubernetes.io/name=infergate,pod-template-hash=548d48788
-replicaset.apps/infergate-mock-backend-d8cd94bc6   1         1         0       34s   mock-backend   ghcr.io/duy-tung/infergate-mock-backend:0.1.0@sha256:d7df3d5609daa85adef6a07e4471c8bb90f5e2472f0bf3b32deb2fa9efb547e2   app.kubernetes.io/component=mock-backend,app.kubernetes.io/name=infergate-mock-backend,pod-template-hash=d8cd94bc6
+replicaset.apps/infergate-gateway-548d48788        2         2         0       25m   gateway        ghcr.io/duy-tung/infergate:0.1.0@sha256:1971426b393b3e00b30cac0690d38b31667b5e34ebbeb6e111a54c369fb54c7e                app.kubernetes.io/component=gateway,app.kubernetes.io/name=infergate,pod-template-hash=548d48788
+replicaset.apps/infergate-mock-backend-d8cd94bc6   1         1         0       25m   mock-backend   ghcr.io/duy-tung/infergate-mock-backend:0.1.0@sha256:d7df3d5609daa85adef6a07e4471c8bb90f5e2472f0bf3b32deb2fa9efb547e2   app.kubernetes.io/component=mock-backend,app.kubernetes.io/name=infergate-mock-backend,pod-template-hash=d8cd94bc6
 
 NAME                            READY   AGE   CONTAINERS   IMAGES
-statefulset.apps/postgres-dev   0/1     49s   postgres     postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+statefulset.apps/postgres-dev   0/1     25m   postgres     postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
 
 == kubectl get nodes (expect none — --disable-agent, proving no scheduling occurred) ==
 No resources found
 
 == kubectl get events -n inferops-local --sort-by=.lastTimestamp ==
 LAST SEEN   TYPE     REASON              OBJECT                                        MESSAGE
-34s         Normal   FailedBinding       persistentvolumeclaim/data-postgres-dev-0     no persistent volumes available for this claim and no storage class is set
-34s         Normal   SuccessfulCreate    replicaset/infergate-gateway-548d48788        Created pod: infergate-gateway-548d48788-r2pzl
-34s         Normal   ScalingReplicaSet   deployment/infergate-gateway                  Scaled up replica set infergate-gateway-548d48788 to 1
-34s         Normal   SuccessfulCreate    replicaset/infergate-mock-backend-d8cd94bc6   Created pod: infergate-mock-backend-d8cd94bc6-tkhbh
-34s         Normal   ScalingReplicaSet   deployment/infergate-mock-backend             Scaled up replica set infergate-mock-backend-d8cd94bc6 to 1
-34s         Normal   SuccessfulCreate    statefulset/postgres-dev                      create Claim data-postgres-dev-0 Pod postgres-dev-0 in StatefulSet postgres-dev success
-34s         Normal   SuccessfulCreate    statefulset/postgres-dev                      create Pod postgres-dev-0 in StatefulSet postgres-dev successful
+25m         Normal   FailedBinding       persistentvolumeclaim/data-postgres-dev-0     no persistent volumes available for this claim and no storage class is set
+25m         Normal   SuccessfulCreate    replicaset/infergate-gateway-548d48788        Created pod: infergate-gateway-548d48788-r2pzl
+25m         Normal   ScalingReplicaSet   deployment/infergate-gateway                  Scaled up replica set infergate-gateway-548d48788 to 1
+25m         Normal   SuccessfulCreate    replicaset/infergate-mock-backend-d8cd94bc6   Created pod: infergate-mock-backend-d8cd94bc6-tkhbh
+25m         Normal   ScalingReplicaSet   deployment/infergate-mock-backend             Scaled up replica set infergate-mock-backend-d8cd94bc6 to 1
+25m         Normal   SuccessfulCreate    statefulset/postgres-dev                      create Claim data-postgres-dev-0 Pod postgres-dev-0 in StatefulSet postgres-dev success
+25m         Normal   SuccessfulCreate    statefulset/postgres-dev                      create Pod postgres-dev-0 in StatefulSet postgres-dev successful
+24m         Normal   FailedBinding       persistentvolumeclaim/data-postgres-dev-0     no persistent volumes available for this claim and no storage class is set
 2s          Normal   FailedBinding       persistentvolumeclaim/data-postgres-dev-0     no persistent volumes available for this claim and no storage class is set
+1s          Normal   SuccessfulCreate    replicaset/infergate-gateway-548d48788        Created pod: infergate-gateway-548d48788-ch2dp
+1s          Normal   ScalingReplicaSet   deployment/infergate-gateway                  Scaled up replica set infergate-gateway-548d48788 to 2 from 1

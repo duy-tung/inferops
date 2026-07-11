@@ -1,0 +1,77 @@
+####################################################################
+# inferops — lifecycle-semantics overlay (IO-T004), compose-pivot.
+#
+# Two named gateway replicas (`gateway-a`, `gateway-b`) behind haproxy
+# (compose/haproxy/haproxy.cfg), used ONLY by
+# scripts/rolling-update-test.sh to exercise a rolling update under live
+# load — the k8s analog is a 2-replica Deployment with
+# maxUnavailable=0/maxSurge=1 behind a Service (see
+# deploy/infergate/base/deployment.yaml's `strategy`). Do not run this
+# alongside the single `gateway` service (profile "app") in
+# docker-compose.yml — they would both try to be *the* gateway; this
+# overlay's replicas share the same mock-backend + postgres-dev dependencies
+# (bring those two up from the base compose file first).
+#
+# Usage: see scripts/rolling-update-test.sh, which starts this file's
+# services itself.
+####################################################################
+
+x-gateway-common: &gateway-common
+  image: infergate@sha256:1971426b393b3e00b30cac0690d38b31667b5e34ebbeb6e111a54c369fb54c7e
+  profiles: ["lifecycle"]
+  depends_on:
+    postgres-dev:
+      condition: service_healthy
+    mock-backend:
+      condition: service_healthy
+  environment:
+    INFERGATE_DB_DSN_FILE: /run/secrets/infergate_db_dsn
+    INFERGATE_KEY_PEPPER_FILE: /run/secrets/infergate_key_pepper
+  volumes:
+    - ./secrets/infergate_db_dsn.txt:/run/secrets/infergate_db_dsn:ro
+    - ./secrets/infergate_key_pepper.txt:/run/secrets/infergate_key_pepper:ro
+  entrypoint: ["/bin/sh", "-c"]
+  command:
+    - >-
+      export INFERGATE_DB_DSN="$$(cat "$$INFERGATE_DB_DSN_FILE")" &&
+      export INFERGATE_KEY_PEPPER="$$(cat "$$INFERGATE_KEY_PEPPER_FILE")" &&
+      exec /usr/local/bin/gateway
+      -addr=:8080
+      -admin-addr=:8090
+      -auth-mode=db
+      -backend-url=http://mock-backend:8081
+      -backend-name=mock
+      -backend-health-path=/healthz
+      -upstream-timeout=30s
+      -drain-timeout=35s
+  # graceful_termination arithmetic (deploy/infergate.deployment-contract.json):
+  # termination_grace_period_seconds=50 > max_stream_duration_seconds=30.
+  # docker compose's `stop_grace_period` is this repo's compose-level analog
+  # of Kubernetes' `terminationGracePeriodSeconds`.
+  stop_signal: SIGTERM
+  stop_grace_period: 50s
+  networks:
+    - inferops-net
+
+services:
+  gateway-a:
+    <<: *gateway-common
+    container_name: inferops-gateway-a
+
+  gateway-b:
+    <<: *gateway-common
+    container_name: inferops-gateway-b
+
+  haproxy:
+    image: haproxy@sha256:3e29449a6beed63262e36104adf531b4e41b359f61937303f5ea8607987b3748
+    profiles: ["lifecycle"]
+    container_name: inferops-haproxy
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "18080:80"
+    depends_on:
+      - gateway-a
+      - gateway-b
+    networks:
+      - inferops-net

@@ -1,0 +1,50 @@
+== inferops drain test — 2026-07-11T23:49:26+00:00 ==
+-- ensuring baseline gateway is up --
+time="2026-07-11T23:49:26Z" level=warning msg="Found orphan containers ([inferops-haproxy inferops-gateway-a inferops-gateway-b inferops-grafana inferops-otel-collector inferops-prometheus inferops-tempo]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container inferops-postgres-dev Running 
+ Container inferops-mock-backend Running 
+ Container inferops-mock-backend Waiting 
+ Container inferops-postgres-dev Waiting 
+ Container inferops-mock-backend Healthy 
+ Container inferops-postgres-dev Healthy 
+ Container inferops-gateway Starting 
+ Container inferops-gateway Started 
+gateway /readyz: 200
+
+-- starting one long-running SSE stream in the background --
+   (this mock-backend release caps completion length at 256 tokens
+   regardless of max_completion_tokens — internal/mockengine/engine.go
+   'cap > 256 { cap = 256 }', discovered while building this test; recorded
+   here rather than assuming an unbounded knob. Prompt below is a fixed
+   point of this repo's seed=42 deterministic generator: it always yields
+   242 tokens => ~1.94s of streaming at -itl=8ms, so SIGTERM below is
+   timed at t+0.9s to land solidly mid-stream, not at t+2s past the end.)
+in-flight stream started (pid 9801); confirming it is actually admitted before draining --
+inference_requests_in_flight{backend="mock"} 1
+
+-- sending SIGTERM to inferops-gateway now (t+1.04s into the stream) --
+inferops-gateway
+-- attempting a NEW request during the drain window (expect a typed 503) --
+new request during drain -> HTTP 503
+{"error":{"message":"Gateway is draining; retry against another replica.","type":"overloaded","code":null,"param":null,"request_id":"req_55db4eb3b1b61f565c763228f676edd4"}}
+
+-- waiting for the container to exit on its own --
+container exited 1 s after SIGTERM (grace budget: 50s) — exit code: 0
+
+-- waiting for the in-flight stream's curl to finish --
+in-flight stream finished: HTTP 200, wall time 2.28s
+
+-- gateway container's own drain log lines --
+time=2026-07-11T23:35:45.473Z level=INFO msg="drain complete" waited=1.97µs
+time=2026-07-11T23:47:45.726Z level=INFO msg="shutdown signal received; draining" signal=terminated in_flight=0 drain_timeout=35s
+time=2026-07-11T23:47:45.726Z level=INFO msg="drain complete" waited=3.347µs
+time=2026-07-11T23:49:29.397Z level=INFO msg="shutdown signal received; draining" signal=terminated in_flight=1 drain_timeout=35s
+time=2026-07-11T23:49:30.359Z level=INFO msg="drain complete" waited=961.980682ms
+
+== Verdicts ==
+PASS  in-flight stream completed successfully (200 + terminal [DONE]) despite SIGTERM mid-stream
+PASS  new request during the drain window was refused with a typed 503 (readiness flipped immediately)
+PASS  container exited on its own in 1s, within the 50s grace budget (no SIGKILL needed)
+
+Grace-period arithmetic (recorded): termination_grace_period_seconds=50 > max_stream_duration_seconds=30 > this test's stream (~2.28s).
+3 passed, 0 failed. Evidence directory: /home/user/inferops/scripts/evidence/drain-test-20260711T234926Z

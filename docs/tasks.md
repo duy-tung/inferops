@@ -56,6 +56,15 @@ Critical path: **IO-T002 → IO-T003 → IO-T004 → IO-T005 → I5 → IO-T006 
 
 ## IO-T004 — Lifecycle semantics
 
+- **Status: DONE (2026-07-11).** Compose-pivot lifecycle tests, all green:
+  `scripts/rolling-update-test.sh` (2-replica gateway-a/gateway-b + haproxy, 0/30
+  client-visible errors across both rolls), `scripts/warmup-readiness-test.sh` (5/5, delayed
+  mock-backend, zero restarts, typed 503 during warm-up), `scripts/drain-test.sh` (3/3, in-flight
+  stream survives SIGTERM, new request during drain gets typed 503, container exits well inside
+  grace). PDB added (`deploy/infergate/base/pdb.yaml`, minAvailable=1/2 replicas). Grace-period
+  arithmetic (50s > 30s) recorded in `docs/testing.md` and `deploy/infergate/base/deployment.yaml`.
+  Full detail + honest findings (gateway's DB-mode startup has no internal retry; mock-backend
+  caps completion length at 256 tokens) in `docs/implementation-notes.md`.
 - **Goal/Repo:** implement and prove startup/readiness/liveness (warm-up-aware), preStop drain, rolling update under load, disruption budget. inferops.
 - **Requirement:** readiness false during warm-up (simulate slow warm-up on the CPU path via mock/llama.cpp startup delay); liveness never kills warming pods; startupProbe window covers worst-case warm-up; preStop drain lets accepted streams finish; `terminationGracePeriodSeconds` > max stream duration (arithmetic recorded); rolling update under scripted live load with zero client-visible errors; PDB defined.
 - **Dependencies:** IO-T002.

@@ -1,0 +1,168 @@
+{
+  "workload_start_utc": "2026-07-12T02:25:08.905111+00:00",
+  "knee_onset_elapsed_s": 90,
+  "phase_stats": {
+    "1": {
+      "phase": 1,
+      "label": "quiet (~24% of measured capacity)",
+      "offered_rps": 8,
+      "duration_s": 45,
+      "client_observed_offered_rps": 8.2,
+      "client_observed_goodput_rps": 8.2,
+      "client_observed_shed_frac": 0.0,
+      "queue_depth_mean": 0.0,
+      "queue_depth_max": 0.0,
+      "in_flight_mean": 1.043,
+      "in_flight_max": 3.0,
+      "token_rate_out_mean": 55.967,
+      "prom_goodput_mean": 7.066,
+      "prom_shed_rps_mean": 0.0,
+      "cpu_pct_inferops-gateway-signals_mean": 3.086,
+      "cpu_pct_inferops-gateway-signals_max": 5.44,
+      "cpu_pct_inferops-mock-signals_mean": 2.817,
+      "cpu_pct_inferops-mock-signals_max": 5.48
+    },
+    "2": {
+      "phase": 2,
+      "label": "approaching (~60%)",
+      "offered_rps": 20,
+      "duration_s": 45,
+      "client_observed_offered_rps": 20.756,
+      "client_observed_goodput_rps": 20.578,
+      "client_observed_shed_frac": 0.0086,
+      "queue_depth_mean": 0.0,
+      "queue_depth_max": 0.0,
+      "in_flight_mean": 2.955,
+      "in_flight_max": 6.0,
+      "token_rate_out_mean": 153.949,
+      "prom_goodput_mean": 19.449,
+      "prom_shed_rps_mean": 0.158,
+      "cpu_pct_inferops-gateway-signals_mean": 7.489,
+      "cpu_pct_inferops-gateway-signals_max": 9.76,
+      "cpu_pct_inferops-mock-signals_mean": 6.667,
+      "cpu_pct_inferops-mock-signals_max": 8.22
+    },
+    "3": {
+      "phase": 3,
+      "label": "at ~1x (IB-T010 E2 baseline rate)",
+      "offered_rps": 37.8072,
+      "duration_s": 60,
+      "client_observed_offered_rps": 39.25,
+      "client_observed_goodput_rps": 33.583,
+      "client_observed_shed_frac": 0.1444,
+      "queue_depth_mean": 0.967,
+      "queue_depth_max": 3.0,
+      "in_flight_mean": 5.467,
+      "in_flight_max": 6.0,
+      "token_rate_out_mean": 259.556,
+      "prom_goodput_mean": 32.622,
+      "prom_shed_rps_mean": 4.641,
+      "cpu_pct_inferops-gateway-signals_mean": 10.346,
+      "cpu_pct_inferops-gateway-signals_max": 14.68,
+      "cpu_pct_inferops-mock-signals_mean": 7.999,
+      "cpu_pct_inferops-mock-signals_max": 9.91
+    },
+    "4": {
+      "phase": 4,
+      "label": "5x severe overload (IB-T010 E2 overload rate)",
+      "offered_rps": 189.0362,
+      "duration_s": 15,
+      "client_observed_offered_rps": 181.0,
+      "client_observed_goodput_rps": 37.4,
+      "client_observed_shed_frac": 0.7934,
+      "queue_depth_mean": 2.714,
+      "queue_depth_max": 3.0,
+      "in_flight_mean": 6.0,
+      "in_flight_max": 6.0,
+      "token_rate_out_mean": 296.968,
+      "prom_goodput_mean": 35.683,
+      "prom_shed_rps_mean": 100.175,
+      "cpu_pct_inferops-gateway-signals_mean": 14.224,
+      "cpu_pct_inferops-gateway-signals_max": 16.67,
+      "cpu_pct_inferops-mock-signals_mean": 7.011,
+      "cpu_pct_inferops-mock-signals_max": 8.55
+    },
+    "5": {
+      "phase": 5,
+      "label": "cool-down (scale-in window)",
+      "offered_rps": 8,
+      "duration_s": 45,
+      "client_observed_offered_rps": 8.067,
+      "client_observed_goodput_rps": 8.067,
+      "client_observed_shed_frac": 0.0,
+      "queue_depth_mean": 0.13,
+      "queue_depth_max": 3.0,
+      "in_flight_mean": 1.435,
+      "in_flight_max": 6.0,
+      "token_rate_out_mean": 92.986,
+      "prom_goodput_mean": 12.01,
+      "prom_shed_rps_mean": 17.947,
+      "cpu_pct_inferops-gateway-signals_mean": 3.088,
+      "cpu_pct_inferops-gateway-signals_max": 5.34,
+      "cpu_pct_inferops-mock-signals_mean": 2.653,
+      "cpu_pct_inferops-mock-signals_max": 4.59
+    }
+  },
+  "detection": {
+    "queue_depth": {
+      "calib_threshold": 0.0,
+      "episodes": [
+        [
+          154.42,
+          172.5
+        ]
+      ],
+      "first_fire_elapsed_s": 154.42,
+      "lag_vs_knee_onset_s": 64.42,
+      "fired_before_knee_false_early": false
+    },
+    "requests_in_flight": {
+      "calib_threshold": 3.9071,
+      "episodes": [
+        [
+          96.1,
+          178.53
+        ]
+      ],
+      "first_fire_elapsed_s": 96.1,
+      "lag_vs_knee_onset_s": 6.1,
+      "fired_before_knee_false_early": false
+    },
+    "token_rate_output_per_s": {
+      "calib_threshold": 111.9812,
+      "episodes": [
+        [
+          55.88,
+          180.54
+        ]
+      ],
+      "first_fire_elapsed_s": 55.88,
+      "lag_vs_knee_onset_s": -34.12,
+      "fired_before_knee_false_early": true
+    },
+    "cpu_pct_inferops-gateway-signals": {
+      "calib_threshold": 5.9237,
+      "episodes": [
+        [
+          51.86,
+          170.49
+        ]
+      ],
+      "first_fire_elapsed_s": 51.86,
+      "lag_vs_knee_onset_s": -38.14,
+      "fired_before_knee_false_early": true
+    },
+    "cpu_pct_inferops-mock-signals": {
+      "calib_threshold": 5.9238,
+      "episodes": [
+        [
+          51.86,
+          170.49
+        ]
+      ],
+      "first_fire_elapsed_s": 51.86,
+      "lag_vs_knee_onset_s": -38.14,
+      "fired_before_knee_false_early": true
+    }
+  }
+}

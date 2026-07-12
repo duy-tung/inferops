@@ -1,0 +1,21 @@
+== IO-T009 H-AS-2 follow-up: 2-replica capacity check — 2026-07-12T02:33:33+00:00 ==
+Workload: /home/user/inferops/experiments/autoscaling/workloads/scaling-demo-2replica-capacity.json (seed 20260712103, 80 rps sustained, 60s, 2 replicas from the start)
+2 replicas + haproxy-signals ready
+inferbench exit: 0
+summary sent=4778 ok=4357 errors=0 shed=421 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=9.860231ms max_send_slip=10.205418ms usage_missing=0 wall=1m0.195s
+-- replica 1 final metrics --
+inference_requests_total{model="mock-8b",backend="mock-signals",tenant_tier="default",status_class="2xx",error_class="none"} 2171
+inference_requests_total{model="mock-8b",backend="unknown",tenant_tier="default",status_class="5xx",error_class="overloaded"} 1079
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 1079
+inference_sheds_total{reason="tenant_rate_limit"} 0
+-- replica 2 final metrics --
+inference_requests_total{model="mock-8b",backend="mock-signals-2",tenant_tier="default",status_class="2xx",error_class="none"} 2186
+inference_requests_total{model="mock-8b",backend="unknown",tenant_tier="default",status_class="5xx",error_class="overloaded"} 1067
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 1067
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+Evidence directory: /home/user/inferops/experiments/autoscaling/evidence/scaling-demo-2replica-capacity-20260712T023333Z

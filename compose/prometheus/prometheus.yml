@@ -67,6 +67,33 @@ scrape_configs:
           app: infergate
           component: gateway-faults-b
 
+  # IO-T009 autoscaling experiments: ad hoc gateway instances
+  # experiments/autoscaling/*.sh create/recreate (same released digest,
+  # admission-sane-v1 flags — reuses faults/lib.sh's start_gateway/start_mock,
+  # same pattern as the fault-campaign targets above). scrape_interval
+  # overridden to 1s (vs the 5s global default) so a ~3.5 minute load ramp
+  # yields enough samples per phase to compare signal responsiveness
+  # meaningfully; harmless/down between experiment runs, same as the
+  # fault-campaign targets. gateway-signals-2 only exists during the
+  # 2-replica half of the scaling demonstration.
+  - job_name: infergate-gateway-signals
+    scrape_interval: 1s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway-signals:8080"]
+        labels:
+          app: infergate
+          component: gateway-signals
+
+  - job_name: infergate-gateway-signals-2
+    scrape_interval: 1s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway-signals-2:8080"]
+        labels:
+          app: infergate
+          component: gateway-signals-2
+
   - job_name: otel-collector
     static_configs:
       - targets: ["otel-collector:8888"]

@@ -1,0 +1,34 @@
+{
+  "before_1_replica": {
+    "n": 3002,
+    "ok": 2207,
+    "shed": 795,
+    "error": 0,
+    "ok_frac": 0.7352,
+    "shed_frac": 0.2648,
+    "error_frac": 0.0,
+    "wall_s": 60.128,
+    "goodput_rps": 36.705,
+    "offered_rps": 49.927
+  },
+  "after_2_replicas": {
+    "n": 3002,
+    "ok": 3002,
+    "shed": 0,
+    "error": 0,
+    "ok_frac": 1.0,
+    "shed_frac": 0.0,
+    "error_frac": 0.0,
+    "wall_s": 60.086,
+    "goodput_rps": 49.962,
+    "offered_rps": 49.962
+  },
+  "fleetlab_comparison": {
+    "fleetlab_fitted_per_replica_capacity_rps": 33.159,
+    "observed_before_goodput_rps_as_per_replica_capacity_proxy": 36.705,
+    "rel_diff_vs_fleetlab_pct": 10.69,
+    "predicted_2_replica_goodput_rps_if_linear": 73.41,
+    "observed_2_replica_goodput_rps": 49.962,
+    "linear_scaling_rel_diff_pct": -31.94
+  }
+}

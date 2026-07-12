@@ -1,0 +1,79 @@
+== IO-T009 H-AS-2 scaling demonstration — 2026-07-12T02:29:44+00:00 ==
+Hypothesis: experiments/autoscaling/hypotheses.md H-AS-2
+Workload: /home/user/inferops/experiments/autoscaling/workloads/scaling-demo-sustained.json (seed 20260712102, 50 rps sustained, 60s)
+
+############################################
+## BEFORE — 1 replica (admission-sane-v1)  ##
+############################################
+infergate-gateway-signals scrape target health: up
+before inferbench exit: 0
+summary sent=3002 ok=2207 errors=0 shed=795 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=18.743627ms max_send_slip=18.879559ms usage_missing=0 wall=1m0.14s
+-- before: final gateway-signals metrics --
+inference_queue_depth{tenant_tier="default"} 0
+inference_requests_in_flight{backend="mock-signals"} 0
+inference_requests_total{model="mock-8b",backend="mock-signals",tenant_tier="default",status_class="2xx",error_class="none"} 2207
+inference_requests_total{model="mock-8b",backend="unknown",tenant_tier="default",status_class="5xx",error_class="overloaded"} 795
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 795
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+############################################
+## SCALING EVENT — compose-scale 1 -> 2    ##
+############################################
+(RQ-14: this is a compose container-count change standing in for what a
+ working HPA/queue_depth-signal controller would have driven the
+ Deployment's ReplicaSet to do — no live Kubernetes controller runs
+ this decision in this environment. See docs/implementation-notes.md.)
+infergate-gateway-signals-2 scrape target health: up
+scale-out wall time (2nd replica ready + haproxy fronting both): 3s
+
+############################################
+## AFTER — 2 replicas behind haproxy       ##
+############################################
+after inferbench exit: 0
+summary sent=3002 ok=3002 errors=0 shed=0 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=10.119749ms max_send_slip=10.288752ms usage_missing=0 wall=1m0.097s
+-- after: final gateway-signals (replica 1) metrics --
+inference_queue_depth{tenant_tier="default"} 0
+inference_requests_in_flight{backend="mock-signals"} 0
+inference_requests_total{model="mock-8b",backend="mock-signals",tenant_tier="default",status_class="2xx",error_class="none"} 3707
+inference_requests_total{model="mock-8b",backend="unknown",tenant_tier="default",status_class="5xx",error_class="overloaded"} 797
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 797
+inference_sheds_total{reason="tenant_rate_limit"} 0
+-- after: final gateway-signals-2 (replica 2) metrics --
+inference_queue_depth{tenant_tier="default"} 0
+inference_requests_in_flight{backend="mock-signals-2"} 0
+inference_requests_total{model="mock-8b",backend="mock-signals-2",tenant_tier="default",status_class="2xx",error_class="none"} 1502
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 0
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+-- computing before/after summary --
+# H-AS-2 scaling demonstration — before/after summary (measured, not simulated)
+
+| | BEFORE (1 replica) | AFTER (2 replicas) |
+|---|---|---|
+| n | 3002 | 3002 |
+| ok | 2207 | 3002 |
+| shed | 795 | 0 |
+| error | 0 | 0 |
+| ok_frac | 0.7352 | 1.0 |
+| shed_frac | 0.2648 | 0.0 |
+| error_frac | 0.0 | 0.0 |
+| wall_s | 60.128 | 60.086 |
+| offered_rps | 49.927 | 49.962 |
+| goodput_rps | 36.705 | 49.962 |
+
+## fleetlab comparison
+
+- **fleetlab_fitted_per_replica_capacity_rps**: 33.159
+- **observed_before_goodput_rps_as_per_replica_capacity_proxy**: 36.705
+- **rel_diff_vs_fleetlab_pct**: 10.69
+- **predicted_2_replica_goodput_rps_if_linear**: 73.41
+- **observed_2_replica_goodput_rps**: 49.962
+- **linear_scaling_rel_diff_pct**: -31.94
+
+Evidence directory: /home/user/inferops/experiments/autoscaling/evidence/scaling-demo-20260712T022944Z

@@ -1,0 +1,44 @@
+{
+  "run_id": "io-t009-scaling-2replica-capacity",
+  "target_topology": "gateway-mock",
+  "workload_ref": {
+    "name": "autoscaling-scaling-demo-2replica-capacity",
+    "version": "1.0.0",
+    "seed": 20260712103
+  },
+  "engine": {
+    "name": "mock",
+    "version": "released-digest",
+    "commit": "n/a",
+    "flags": {}
+  },
+  "model": {
+    "checkpoint": "mock-8b",
+    "revision": "n/a",
+    "tokenizer": "engine-native"
+  },
+  "hardware": {
+    "gpu_model": null,
+    "gpu_count": 0,
+    "vram_gb": null,
+    "driver_version": null,
+    "cuda_version": null,
+    "instance_type": "local-dev-container (linux/amd64, CPU-only)"
+  },
+  "gateway": {
+    "version": "infergate@sha256:1971426b393b (v0.1.0 release digest)",
+    "config_version": "flags-v1 (static flag config, -auth-mode=none)"
+  },
+  "client": {
+    "location": "same-host (loopback)",
+    "rtt_ms": 0.5
+  },
+  "warm_up": {
+    "policy": "none"
+  },
+  "repetitions": 1,
+  "hypothesis": "H-AS-2 follow-up: 80rps against 2 saturated replicas measures the real 2-replica goodput ceiling, comparable to 2x the single-replica capacity figures measured elsewhere in this task and to FL-T009's linear-scaling assumption.",
+  "started_at": "2026-07-12T02:33:35Z",
+  "contracts_bundle_version": "unpinned local checkout (docs/interfaces.md pin as of 2026-07)",
+  "notes": "IO-T006/T007 fault-campaign client-impact capture, not a benchmark report: single repetition, no warm-up handling. Recorded per program evidence rules (measured, dated)."
+}

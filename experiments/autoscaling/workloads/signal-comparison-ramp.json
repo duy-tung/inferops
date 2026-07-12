@@ -1,0 +1,32 @@
+{
+  "name": "autoscaling-signal-comparison-ramp",
+  "version": "1.0.0",
+  "seed": 20260712101,
+  "description": "IO-T009 signal-comparison experiment: a 5-phase open-loop-poisson ramp against a single gateway replica running the exact admission-sane-v1 configuration inferbench's IB-T010 E2 experiment used (-admission-tenant-queue-cap=3 -admission-global-inflight-budget=6 -admission-global-queue-cap=3 -admission-queue-deadline=500ms, mock backend -ttft=80ms -itl=10ms). Phase 3's rate (37.8072 rps) and phase 4's rate (189.0362 rps) are IB-T010 E2's own 'ib-t010-e2-baseline'/'ib-t010-e2-overload' declared offered rates verbatim, reused here so this run's achieved throughput is directly comparable to inferbench's real measured 33.159 rps / 37.925 rps and to fleetlab's FL-T009 fitted 33.159 rps/replica capacity claim (see experiments/autoscaling/report.md). Input/output length distributions also copied from that same workload (uniform, matching the fitted profile's own training data) rather than invented, for the same reason. Phases 1-2 stay well under the known single-replica capacity (quiet/approaching); phase 3 sits at ~1x; phase 4 is a short ~5x severe-overload burst (mirrors fleetlab's e2-admission-sane-v1-5x-scaleout recommendation scenario exactly); phase 5 is a cool-down window to observe scale-in-direction signal behavior.",
+  "arrival_process": {
+    "type": "open-loop-poisson",
+    "phases": [
+      { "duration_seconds": 45, "rate_rps": 8 },
+      { "duration_seconds": 45, "rate_rps": 20 },
+      { "duration_seconds": 60, "rate_rps": 37.8072 },
+      { "duration_seconds": 15, "rate_rps": 189.0362 },
+      { "duration_seconds": 45, "rate_rps": 8 }
+    ],
+    "repeat_phases": false
+  },
+  "input_length_distribution": {
+    "type": "uniform",
+    "min": 24,
+    "max": 64
+  },
+  "output_length_distribution": {
+    "type": "uniform",
+    "min": 10,
+    "max": 20
+  },
+  "prefix_sharing": { "ratio": 0 },
+  "cancellation": { "rate": 0 },
+  "slow_client": { "fraction": 0 },
+  "stop": { "duration_seconds": 210 },
+  "tags": ["autoscaling", "io-t009", "signal-comparison", "operational"]
+}

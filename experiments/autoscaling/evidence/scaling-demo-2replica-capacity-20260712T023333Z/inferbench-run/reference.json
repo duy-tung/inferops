@@ -1,0 +1,7 @@
+{
+  "workload_name": "autoscaling-scaling-demo-2replica-capacity",
+  "workload_version": "1.0.0",
+  "seed": 20260712103,
+  "item_count": 4778,
+  "schedule_fingerprint": "490cf43cbf6dbc073594bd8d567746d0c3c8885313638ce46cf6b7c6cc3a2a72"
+}

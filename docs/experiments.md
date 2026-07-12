@@ -6,7 +6,7 @@ Two experiment families: **autoscaling experiments** (IO-T009, I6 verification a
 
 - **H1:** rolling update under load with correct probes/drain yields **0 client-visible errors** (scenario 12 target — a program success criterion, not a guess).
 - **H2:** with warm-up-aware readiness, a vLLM pod receives **0 requests before warm-up completes** and undergoes **0 liveness restarts** during warm-up (scenario 11).
-- **H3:** scaling on queue depth reacts faster than scaling on CPU utilization for token-heavy workloads — tested against fleetlab's prediction; agreement or divergence is reported either way (divergence is a result, not a failure).
+- **H3:** scaling on queue depth reacts faster than scaling on CPU utilization for token-heavy workloads — tested against fleetlab's prediction; agreement or divergence is reported either way (divergence is a result, not a failure). **Tested 2026-07-12** (`experiments/autoscaling/results.md` §2): partially confirmed with a refinement — `inference_requests_in_flight`, not `inference_queue_depth`, was the fastest/most-stable count-based signal for the shallow-queue admission config actually measured (queue_depth under-read the true overload, firing 64s late vs. in_flight's 6s); both beat the CPU-utilization proxy, which fired 34-38s *early* (false positive), confirming fleetlab's "never utilization alone" recommendation via a different failure mode than FL-T006's own simulation found.
 - **H4:** killing the observability stack changes gateway request success rate by **0**.
 
 ## 2. Autoscaling experiments (IO-T009)

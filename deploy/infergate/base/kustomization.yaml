@@ -5,6 +5,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - pdb.yaml
+  - hpa.yaml # IO-T009: CPU-based HPA baseline — see hpa.yaml's own header comment.
 
 # Non-secret operational metadata. Honesty note: under -auth-mode=db
 # (this deployment's reference mode per the deployment-contract descriptor)

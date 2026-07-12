@@ -171,11 +171,47 @@ Critical path: **IO-T002 → IO-T003 → IO-T004 → IO-T005 → I5 → IO-T006 
 
 ## IO-T009 — Autoscaling experiments
 
+- **Status: DONE (2026-07-12).** Compose-pivot (RQ-14, see `docs/implementation-notes.md`
+  Deviations D-1): no controller (plain HPA, Prometheus-Adapter-backed HPA, or KEDA) can evaluate
+  a metric or reschedule a pod in this environment, so the HPA baseline is authored + validated
+  against a live k3s API server only, and the SIGNALS + SCALING DECISION are demonstrated on the
+  real running compose substrate instead. **HPA baseline**: `deploy/infergate/base/hpa.yaml`
+  (CPU `Resource` metric, 70% target, `minReplicas: 2`/`maxReplicas: 8`), validated —
+  `clusters/local/evidence/k3s-validation-20260712-hpa.txt` (10 objects rendered, HPA object
+  created in etcd, `TARGETS: cpu: <unknown>/70%` as expected with no metrics-server). **KEDA
+  evaluated and not adopted** — `docs/adr/0003-keda-not-adopted.md`. **Signal-comparison
+  experiment** (the real deliverable): a single gateway replica running inferbench's own IB-T010
+  E2 `admission-sane-v1` config driven through a 210s, 5-phase load ramp
+  (`experiments/autoscaling/workloads/signal-comparison-ramp.json`) crossing its real capacity
+  knee, signals captured from real Prometheus + real `docker stats` every 1s
+  (`experiments/autoscaling/run-signal-comparison.sh`,
+  `experiments/autoscaling/evidence/signal-comparison-20260712T022504Z/`). **Verdict:
+  `inference_requests_in_flight` won** (fired 6.1s after the true knee, zero false/early
+  triggers); `inference_queue_depth` under-read the true overload as FL-T009 disclosed it would
+  (fired 64.4s late — the shallow admission-sane-v1 queue flickers rather than holding a stable
+  reading right at the knee); both token-arrival rate and the CPU-utilization proxy fired
+  35-38s *early* (false positives), confirming fleetlab's FL-T006 recommendation
+  (never utilization alone) with a concrete, measured mechanism. **Scaling demonstration**: 1→2
+  compose-replica before/after at sustained load — `queue_depth` dropped 91% (1.33→0.11), shed
+  fraction 26.5%→0% (`experiments/autoscaling/run-scaling-demo.sh`,
+  `experiments/autoscaling/evidence/scaling-demo-20260712T022944Z/`), with an honesty note that
+  this run was demand-capped, not capacity-capped, plus a genuine saturating 2-replica follow-up
+  (`experiments/autoscaling/run-scaling-demo-2replica-capacity.sh`) that WAS capacity-capped
+  (72.39 rps observed, between the two linear-scaling predictions). **fleetlab comparison**: this
+  task's own re-measurement of FL-T009's exact `admission-sane-v1` config, at the exact rates
+  FL-T009's evidence was built from, landed within **+1.3%** of fleetlab's fitted 33.159 rps/
+  replica at the fitted rate, and progressively closer to inferbench's own alternative
+  "overload-empirical" 37.925 rps estimate (within 1-3%) at higher offered rates — confirming
+  FL-T009's fitted figure at its own operating point while giving three new, independent
+  measured points toward the open question of which of fleetlab's two single-point capacity
+  estimates better predicts behavior away from that point (leaning toward 37.925, not 33.159).
+  Full detail, honest deviations (6-replica re-measurement scoped down to 2; `results.md`
+  filename deviation), and reproduction commands: `experiments/autoscaling/results.md`.
 - **Goal/Repo:** run HPA-based autoscaling experiments and compare observed behavior against fleetlab predictions. inferops.
 - **Hypothesis (per experiment, written first):** scaling on <signal> at <threshold> keeps <SLO metric> within <bound> under the seeded workload — as predicted by fleetlab report <ID>.
 - **Requirement:** HPA baseline; KEDA only if a required signal cannot be served otherwise (justify in an ADR before adopting); signals: queue depth, in-flight requests, token-arrival rate; mock/llama.cpp backends (GPU variant only if budget remains); seeded inferbench load; record scaling events (`kubectl get events`, HPA status, metric snapshots); compare observed vs fleetlab-predicted behavior. Capacity logic stays in fleetlab — this task deploys, drives, observes, reports.
 - **Dependencies:** IO-T003; fleetlab signal-comparison output (FL-T006).
-- **Expected files:** `experiments/autoscaling/*`, `experiments/autoscaling/report.md`, optional `docs/adr/000X-keda.md`.
+- **Expected files:** `experiments/autoscaling/*`, `experiments/autoscaling/results.md` (named `report.md` in the original plan; renamed — see `docs/implementation-notes.md`), `docs/adr/0003-keda-not-adopted.md`.
 - **Complexity:** M. **Critical path:** no. **Parallel-safe:** yes.
 - **Human-review focus:** experiment design (seeded, controlled, one variable); no capacity math creeping in.
 - **Verification:** scaling events observed and recorded per experiment; comparison table predicted-vs-observed.

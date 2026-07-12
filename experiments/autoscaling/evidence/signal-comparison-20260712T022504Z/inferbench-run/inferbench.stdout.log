@@ -1,0 +1,2 @@
+run io-t009-signal-comparison: sent=6736 ok=4234 errors=0 shed=2502 canceled=0 max_dispatch_slip=18.34159ms max_send_slip=19.172719ms wall=3m30.073s
+artifacts: /home/user/inferops/experiments/autoscaling/evidence/signal-comparison-20260712T022504Z/inferbench-run

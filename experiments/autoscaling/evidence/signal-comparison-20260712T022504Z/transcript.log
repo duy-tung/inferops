@@ -1,0 +1,55 @@
+== IO-T009 H-AS-1 signal comparison — 2026-07-12T02:25:04+00:00 ==
+Hypothesis: experiments/autoscaling/hypotheses.md H-AS-1
+Workload: experiments/autoscaling/workloads/signal-comparison-ramp.json (seed 20260712101)
+
+-- starting mock-signals (-ttft=80ms -itl=10ms, IB-T010 E2's own mock-backend timing) --
+-- starting gateway-signals (admission-sane-v1: budget=6, tenant-queue-cap=3, global-queue-cap=3, deadline=500ms — IB-T010 E2's exact admission-sane-v1 flags) --
+gateway-signals ready
+
+-- confirming Prometheus scrape target is up before starting the timed run --
+infergate-gateway-signals scrape target health: up
+
+-- starting the 1s-resolution signal poller in the background (210s + margin) --
+-- driving the 210s load ramp with inferbench (foreground) --
+inferbench exit code: 0
+summary sent=6736 ok=4234 errors=0 shed=2502 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=18.34159ms max_send_slip=19.172719ms usage_missing=0 wall=3m30.073s
+
+-- waiting for the signal poller to finish its post-load cool-down samples --
+poller finished: wrote 113 samples to /home/user/inferops/experiments/autoscaling/evidence/signal-comparison-20260712T022504Z/signals.csv
+
+-- final gateway-signals /metrics snapshot --
+inference_queue_depth{tenant_tier="default"} 0
+inference_requests_in_flight{backend="mock-signals"} 0
+inference_requests_total{model="mock-8b",backend="mock-signals",tenant_tier="default",status_class="2xx",error_class="none"} 4234
+inference_requests_total{model="mock-8b",backend="unknown",tenant_tier="default",status_class="5xx",error_class="overloaded"} 2502
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 2502
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+-- running analysis --
+# H-AS-1 signal-comparison — per-phase summary (measured, not simulated)
+
+Workload start (UTC): `2026-07-12T02:25:08.905111+00:00`. True knee onset (phase 3 start): elapsed 90s.
+
+| Phase | Offered rps (planned) | Offered rps (client-observed) | Goodput rps (client-observed) | Shed frac | queue_depth mean/max | in_flight mean/max | token_rate_out mean | cpu_pct_inferops-gateway-signals mean/max | cpu_pct_inferops-mock-signals mean/max |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 (quiet (~24% of measured capacity)) | 8 | 8.2 | 8.2 | 0.0 | 0.0/0.0 | 1.043/3.0 | 55.967 | 3.086/5.44 | 2.817/5.48 |
+| 2 (approaching (~60%)) | 20 | 20.756 | 20.578 | 0.0086 | 0.0/0.0 | 2.955/6.0 | 153.949 | 7.489/9.76 | 6.667/8.22 |
+| 3 (at ~1x (IB-T010 E2 baseline rate)) | 37.8072 | 39.25 | 33.583 | 0.1444 | 0.967/3.0 | 5.467/6.0 | 259.556 | 10.346/14.68 | 7.999/9.91 |
+| 4 (5x severe overload (IB-T010 E2 overload rate)) | 189.0362 | 181.0 | 37.4 | 0.7934 | 2.714/3.0 | 6.0/6.0 | 296.968 | 14.224/16.67 | 7.011/8.55 |
+| 5 (cool-down (scale-in window)) | 8 | 8.067 | 8.067 | 0.0 | 0.13/3.0 | 1.435/6.0 | 92.986 | 3.088/5.34 | 2.653/4.59 |
+
+## Detection (fleetlab ADR-0003 rule: calib-window mean+3*std threshold, 5s debounce, 0.7x/5s clear)
+
+| Signal | calib threshold | first-fire elapsed_s | lag vs knee onset (90s) | fired before knee (false/early)? | episodes |
+|---|---|---|---|---|---|
+| queue_depth | 0.0 | 154.42 | 64.42 | False | [(154.42, 172.5)] |
+| requests_in_flight | 3.9071 | 96.1 | 6.1 | False | [(96.1, 178.53)] |
+| token_rate_output_per_s | 111.9812 | 55.88 | -34.12 | True | [(55.88, 180.54)] |
+| cpu_pct_inferops-gateway-signals | 5.9237 | 51.86 | -38.14 | True | [(51.86, 170.49)] |
+| cpu_pct_inferops-mock-signals | 5.9238 | 51.86 | -38.14 | True | [(51.86, 170.49)] |
+
+-- tearing down --
+
+Evidence directory: /home/user/inferops/experiments/autoscaling/evidence/signal-comparison-20260712T022504Z

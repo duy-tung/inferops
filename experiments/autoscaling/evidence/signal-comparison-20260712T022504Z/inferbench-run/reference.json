@@ -1,0 +1,7 @@
+{
+  "workload_name": "autoscaling-signal-comparison-ramp",
+  "workload_version": "1.0.0",
+  "seed": 20260712101,
+  "item_count": 6736,
+  "schedule_fingerprint": "82596b3843e9cb55c68a05d9387ad15849cf7ea958c0e4a914a1c3781ba3fd7c"
+}

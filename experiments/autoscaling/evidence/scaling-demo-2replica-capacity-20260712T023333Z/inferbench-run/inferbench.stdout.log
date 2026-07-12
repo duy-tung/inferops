@@ -1,0 +1,2 @@
+run io-t009-scaling-2replica-capacity: sent=4778 ok=4357 errors=0 shed=421 canceled=0 max_dispatch_slip=9.860231ms max_send_slip=10.205418ms wall=1m0.195s
+artifacts: /home/user/inferops/experiments/autoscaling/evidence/scaling-demo-2replica-capacity-20260712T023333Z/inferbench-run

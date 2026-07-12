@@ -1,0 +1,7 @@
+{
+  "workload_name": "autoscaling-scaling-demo-sustained",
+  "workload_version": "1.0.0",
+  "seed": 20260712102,
+  "item_count": 3002,
+  "schedule_fingerprint": "3479f071a93b80bceb2e189954170017edd68a97e0bb6279898474976c467687"
+}

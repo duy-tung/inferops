@@ -1,0 +1,37 @@
+[
+  {
+    "phase": 1,
+    "label": "quiet (~24% of measured capacity)",
+    "start_s": 0,
+    "end_s": 45,
+    "offered_rps": 8
+  },
+  {
+    "phase": 2,
+    "label": "approaching (~60%)",
+    "start_s": 45,
+    "end_s": 90,
+    "offered_rps": 20
+  },
+  {
+    "phase": 3,
+    "label": "at ~1x (IB-T010 E2 baseline rate)",
+    "start_s": 90,
+    "end_s": 150,
+    "offered_rps": 37.8072
+  },
+  {
+    "phase": 4,
+    "label": "5x severe overload (IB-T010 E2 overload rate)",
+    "start_s": 150,
+    "end_s": 165,
+    "offered_rps": 189.0362
+  },
+  {
+    "phase": 5,
+    "label": "cool-down (scale-in window)",
+    "start_s": 165,
+    "end_s": 210,
+    "offered_rps": 8
+  }
+]

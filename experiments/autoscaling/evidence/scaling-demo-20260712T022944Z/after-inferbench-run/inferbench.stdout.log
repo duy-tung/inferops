@@ -1,0 +1,2 @@
+run io-t009-scaling-after: sent=3002 ok=3002 errors=0 shed=0 canceled=0 max_dispatch_slip=10.119749ms max_send_slip=10.288752ms wall=1m0.097s
+artifacts: /home/user/inferops/experiments/autoscaling/evidence/scaling-demo-20260712T022944Z/after-inferbench-run

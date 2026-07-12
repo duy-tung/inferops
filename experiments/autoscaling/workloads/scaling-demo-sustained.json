@@ -1,0 +1,25 @@
+{
+  "name": "autoscaling-scaling-demo-sustained",
+  "version": "1.0.0",
+  "seed": 20260712102,
+  "description": "IO-T009 scaling demonstration: a constant-rate open-loop-poisson load at 50 rps (~1.5x the single-replica capacity this same admission-sane-v1 config measured in the signal-comparison run, phase 3 -- see experiments/autoscaling/report.md), held for 60s and run TWICE with the SAME seed: once against 1 gateway replica ('before'), once against 2 replicas behind haproxy ('after' -- compose-scaling, not HPA pod rescheduling, per RQ-14; see docs/implementation-notes.md). Same request-size distributions as the signal-comparison workload for direct comparability.",
+  "arrival_process": {
+    "type": "open-loop-poisson",
+    "rate_rps": 50
+  },
+  "input_length_distribution": {
+    "type": "uniform",
+    "min": 24,
+    "max": 64
+  },
+  "output_length_distribution": {
+    "type": "uniform",
+    "min": 10,
+    "max": 20
+  },
+  "prefix_sharing": { "ratio": 0 },
+  "cancellation": { "rate": 0 },
+  "slow_client": { "fraction": 0 },
+  "stop": { "duration_seconds": 60 },
+  "tags": ["autoscaling", "io-t009", "scaling-demo", "operational"]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "autoscaling-scaling-demo-2replica-capacity",
+  "version": "1.0.0",
+  "seed": 20260712103,
+  "description": "IO-T009 follow-up to the scaling-demo-sustained.json run: that run's 50rps offered load turned out to be BELOW 2-replica capacity (0% shed after scaling -- a demand-capped, not capacity-capped, measurement; see experiments/autoscaling/report.md 'honesty note'). This workload offers 80 rps (comfortably above 2x the ~33-37rps single-replica capacity band measured elsewhere in this task) against the SAME 2-replica admission-sane-v1 topology, to get a real 2-replica capacity ceiling comparable to FL-T009's fitted 33.159 rps/replica x N linear-scaling assumption.",
+  "arrival_process": {
+    "type": "open-loop-poisson",
+    "rate_rps": 80
+  },
+  "input_length_distribution": {
+    "type": "uniform",
+    "min": 24,
+    "max": 64
+  },
+  "output_length_distribution": {
+    "type": "uniform",
+    "min": 10,
+    "max": 20
+  },
+  "prefix_sharing": { "ratio": 0 },
+  "cancellation": { "rate": 0 },
+  "slow_client": { "fraction": 0 },
+  "stop": { "duration_seconds": 60 },
+  "tags": ["autoscaling", "io-t009", "scaling-demo", "capacity-check", "operational"]
+}

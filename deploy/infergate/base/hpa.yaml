@@ -1,0 +1,77 @@
+# IO-T009 — HPA baseline (the "naive" CPU-utilization autoscaler).
+#
+# This is deliberately the NAIVE baseline the task asks for, not the
+# recommended mechanism. fleetlab's FL-T006 signal-comparison
+# (/home/user/fleetlab/reports/autoscaling-signals.md) and FL-T009's Contract
+# 7 recommendation for this exact workload class
+# (examples/recommendations/e2-admission-sane-v1-5x-scaleout.capacity-recommendation.json,
+# vendored findings summarized in experiments/autoscaling/report.md) both
+# recommend queue-depth-style signals over CPU utilization: FL-T006 Finding 1
+# shows a uniformly-tuned utilization threshold is frequently *unreachable* at
+# low concurrency, and Finding 2 shows it pins near its 1.0 ceiling well
+# before genuine saturation. This object exists as the required baseline
+# artifact for comparison, not as an endorsed production configuration.
+#
+# RQ-14 compose-pivot (docs/implementation-notes.md "Deviations" D-1): this
+# environment cannot schedule pods, so this HPA is authored and validated
+# against a live k3s API server (clusters/local/validate-k3s.sh) but no
+# controller ever evaluates it and no scale event it might request is ever
+# real. Targets read <unknown> because no metrics-server runs here (disabled
+# in validate-k3s.sh, consistent with every other manifest in this repo). The
+# actual scaling SIGNAL comparison and scaling DECISION are demonstrated on
+# the running compose substrate instead — see experiments/autoscaling/.
+#
+# KEDA: evaluated and NOT adopted — see docs/adr/0003-keda-not-adopted.md.
+# queue_depth (the Contract-7-recommended fallback signal) would need a
+# custom/external-metrics path (Prometheus Adapter or a KEDA ScaledObject) on
+# a real cluster; this repo cannot exercise that controller loop at all under
+# RQ-14, so standing up either adapter here would add real deployment surface
+# with zero additional evidence value over what this CPU-based HPA + the
+# compose signal/scaling experiment already demonstrate.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: infergate-gateway
+  labels:
+    app.kubernetes.io/name: infergate
+    app.kubernetes.io/component: gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: infergate-gateway
+  # minReplicas matches deployment.yaml's replicas: 2 (IO-T004's PDB
+  # minAvailable: 1 topology) so the HPA never fights the lifecycle baseline.
+  # maxReplicas: 8 matches FL-T009's own recommended bounds
+  # (autoscaling.bounds.max_replicas) in the vendored Contract 7 example, for
+  # apples-to-apples comparison even though the signal differs.
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          # 70% is a conventional, NOT a measured or fitted, default -- there
+          # is no basis in this repo's evidence for any specific number, which
+          # is itself part of FL-T006's point about utilization thresholds.
+          averageUtilization: 70
+  # Stabilization windows deliberately set to the SAME 60s scale-out /
+  # 300s scale-in cadence as FL-T009's recommended queue_depth thresholds
+  # (autoscaling.thresholds in the vendored recommendation JSON), so a
+  # side-by-side comparison of "how fast would each mechanism have reacted"
+  # isn't also confounded by different timing knobs.
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 300

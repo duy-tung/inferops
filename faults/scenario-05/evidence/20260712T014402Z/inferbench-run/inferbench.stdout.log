@@ -1,0 +1,2 @@
+run fs05-run: sent=60 ok=60 errors=0 shed=0 canceled=0 max_dispatch_slip=19.263198ms max_send_slip=19.464135ms wall=18.625s
+artifacts: /home/user/inferops/faults/scenario-05/evidence/20260712T014402Z/inferbench-run

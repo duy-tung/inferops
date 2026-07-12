@@ -1,0 +1,45 @@
+== Scenario 01 — backend killed before first token — 2026-07-12T01:21:33+00:00 ==
+-- starting mock-faults (ttft=3s, wide pre-first-token window) + gateway-faults --
+gateway-faults ready
+
+-- BEFORE: inference_backend_healthy{backend=mock-faults} --
+inference_backend_healthy{backend="mock-faults"} 1
+
+-- launching background inferbench client load (streaming, rate=4, seed=42042001) --
+
+-- t+1.5s: docker kill -s SIGKILL inferops-mock-faults (at 2026-07-12T01:21:35+00:00) --
+inferops-mock-faults
+-- t+2.5s: inference_backend_healthy{backend=mock-faults} after the kill --
+inference_backend_healthy{backend="mock-faults"} 0
+
+-- t+6s: restarting mock-faults (same alias, same flags) to observe recovery --
+restarted at 2026-07-12T01:21:40+00:00
+-- inference_backend_healthy{backend=mock-faults} after recovery: 1 --
+
+-- waiting for the background inferbench run to finish --
+inferbench exit code: 0
+
+-- gateway-faults /metrics AFTER --
+inference_backend_healthy{backend="mock-faults"} 1
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 39
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="overloaded"} 15
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="upstream_error"} 6
+inference_retries_total{stage="pre_first_token"} 0
+
+-- inferbench run summary (run.log tail) --
+summary sent=60 ok=39 errors=6 shed=15 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=1.158603ms max_send_slip=1.711303ms usage_missing=0 wall=21.633s
+
+-- error_class breakdown across the run (events.jsonl) --
+('error', 'upstream_error') 6
+('ok', None) 39
+('shed', 'overloaded') 15
+
+-- duplicated/oversized output check (output_tokens must never exceed the workload's output cap of 200) --
+oversized_count= 0
+
+-- stage cardinality check: only pre_first_token should ever appear --
+inference_retries_total{stage="pre_first_token"} 0
+
+-- tearing down mock-faults / gateway-faults --
+
+Evidence directory: /home/user/inferops/faults/scenario-01/evidence/20260712T012133Z

@@ -1,0 +1,13 @@
+headers received at t= 0.02 ; status line: b'HTTP/1.1 200 OK'
+stalling with ZERO reads for 8s (gateway -stream-write-timeout=3s; a working per-write deadline should have failed a blocked write well before this)
+first drain after the stall: 939 bytes, EOF=False
+draining further to see whether the stream resumes normal delivery (i.e. it was purely TCP-window-blocked and NEVER closed by the write-deadline, not that it had already finished before the stall began)
+read #0: 576 bytes (stream resumed normally)
+read #1: 576 bytes (stream resumed normally)
+read #2: 576 bytes (stream resumed normally)
+read #3: 576 bytes (stream resumed normally)
+read #4: 576 bytes (stream resumed normally)
+read #5: 576 bytes (stream resumed normally)
+additional bytes drained after resuming reads: 3456
+
+VERDICT: DEVIATION: the stream was NOT closed by the write-deadline during the 8s stall -- it just sat blocked on TCP backpressure and resumed normal delivery the moment reads resumed.

@@ -1,0 +1,2 @@
+run fs02-run: sent=60 ok=44 errors=13 shed=3 canceled=0 max_dispatch_slip=1.123277ms max_send_slip=1.817923ms wall=47.048s
+artifacts: /home/user/inferops/faults/scenario-02/evidence/20260712T012710Z/inferbench-run

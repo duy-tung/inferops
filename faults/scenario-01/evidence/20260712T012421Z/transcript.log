@@ -1,0 +1,76 @@
+== Scenario 01 — backend killed before first token — 2026-07-12T01:24:21+00:00 ==
+-- starting mock-faults (ttft=3s, wide pre-first-token window) + gateway-faults --
+gateway-faults ready
+
+-- BEFORE: inference_backend_healthy{backend=mock-faults} --
+inference_backend_healthy{backend="mock-faults"} 1
+
+-- launching background inferbench client load (streaming, rate=4, seed=42042001) --
+
+-- t+1.5s: docker kill -s SIGKILL inferops-mock-faults (at 2026-07-12T01:24:24+00:00) --
+inferops-mock-faults
+-- t+2.5s: inference_backend_healthy{backend=mock-faults} after the kill --
+inference_backend_healthy{backend="mock-faults"} 0
+
+-- t+6s: restarting mock-faults (same alias, same flags) to observe recovery --
+restarted at 2026-07-12T01:24:29+00:00
+-- inference_backend_healthy{backend=mock-faults} after recovery: 1 --
+
+-- waiting for the background inferbench run to finish --
+inferbench exit code: 0
+
+-- gateway-faults /metrics AFTER --
+inference_backend_healthy{backend="mock-faults"} 1
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 39
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="overloaded"} 15
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="upstream_error"} 6
+inference_retries_total{stage="pre_first_token"} 0
+
+-- inferbench run summary (run.log tail) --
+summary sent=60 ok=39 errors=6 shed=15 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=2.467059ms max_send_slip=2.672504ms usage_missing=0 wall=21.608s
+
+-- error_class breakdown across the run (events.jsonl) --
+('error', 'upstream_error') 6
+('ok', None) 39
+('shed', 'overloaded') 15
+
+-- duplicated/oversized output check (output_tokens must never exceed the workload's output cap of 200) --
+oversized_count= 0
+
+-- stage cardinality check: only pre_first_token should ever appear --
+inference_retries_total{stage="pre_first_token"} 0
+
+== Part 2: transient (probabilistic) pre-first-token failures ==
+The hard-kill run above (Part 1) showed inference_retries_total staying at 0: once the
+health poller (200ms interval, internal/route.DefaultPollInterval) marks the single dead
+backend unhealthy, Router.Select fails on the SECOND (retry) call too, and
+internal/reliability/retry.go's Do() returns the earlier lastErr WITHOUT ever reaching the
+'tries>0' branch that increments inference_retries_total (retry.go:99-104) — there is no
+second backend to usefully retry onto, so the implementation does not count a doomed retry.
+This part demonstrates the retry mechanism itself DOES work and IS counted, using a
+transient per-request failure (mock -error-rate=0.5) that never touches /healthz: health
+stays 1 throughout, so every retry's Select() succeeds against the SAME backend, and a
+50% chance of success on the retry attempt cleanly demonstrates both fs-01 clauses in one
+population: some requests retry-and-succeed, some retry-and-exhaust-the-budget-and-fail.
+
+-- restarting mock-faults with -error-rate=0.5 (transient per-request failure, /healthz unaffected) --
+inferbench (part 2) exit code: 0
+
+-- gateway-faults /metrics after part 2 --
+inference_backend_healthy{backend="mock-faults"} 1
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 8
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="overloaded"} 43
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="upstream_error"} 9
+inference_retries_total{stage="pre_first_token"} 4
+
+-- part 2 inferbench summary --
+summary sent=60 ok=8 errors=9 shed=43 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=1.135586ms max_send_slip=1.833128ms usage_missing=0 wall=13.681s
+
+-- part 2 error_class breakdown --
+('error', 'upstream_error') 9
+('ok', None) 8
+('shed', 'overloaded') 43
+
+-- tearing down mock-faults / gateway-faults --
+
+Evidence directory: /home/user/inferops/faults/scenario-01/evidence/20260712T012421Z

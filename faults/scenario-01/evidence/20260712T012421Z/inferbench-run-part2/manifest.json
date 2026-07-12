@@ -1,0 +1,44 @@
+{
+  "run_id": "fs01-run-part2",
+  "target_topology": "gateway-mock",
+  "workload_ref": {
+    "name": "fault-chat-short",
+    "version": "1.0.0",
+    "seed": 42042001
+  },
+  "engine": {
+    "name": "mock",
+    "version": "released-digest",
+    "commit": "n/a",
+    "flags": {}
+  },
+  "model": {
+    "checkpoint": "mock-8b",
+    "revision": "n/a",
+    "tokenizer": "engine-native"
+  },
+  "hardware": {
+    "gpu_model": null,
+    "gpu_count": 0,
+    "vram_gb": null,
+    "driver_version": null,
+    "cuda_version": null,
+    "instance_type": "local-dev-container (linux/amd64, CPU-only)"
+  },
+  "gateway": {
+    "version": "infergate@sha256:1971426b393b (v0.1.0 release digest)",
+    "config_version": "flags-v1 (static flag config, -auth-mode=none)"
+  },
+  "client": {
+    "location": "same-host (loopback)",
+    "rtt_ms": 0.5
+  },
+  "warm_up": {
+    "policy": "none"
+  },
+  "repetitions": 1,
+  "hypothesis": "Transient 50% pre-first-token failure rate on a healthy-per-/healthz backend: pre-first-token retries recover roughly half the otherwise-failed requests; the rest exhaust the 2-attempt cap and fail typed upstream_error. inference_retries_total{stage=pre_first_token} increases; no other stage ever appears.",
+  "started_at": "2026-07-12T01:24:45Z",
+  "contracts_bundle_version": "v0.2.0",
+  "notes": "IO-T006/T007 fault-campaign client-impact capture, not a benchmark report: single repetition, no warm-up handling. Recorded per program evidence rules (measured, dated)."
+}

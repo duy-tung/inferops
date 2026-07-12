@@ -1,0 +1,72 @@
+== Scenario 02 — backend killed after first token — 2026-07-12T01:27:10+00:00 ==
+-- starting mock-faults (ttft=100ms, itl=500ms) + gateway-faults --
+gateway-faults ready
+
+-- BEFORE: usage/requests/retries counters --
+inference_retries_total{stage="pre_first_token"} 0
+inference_usage_tokens_total{direction="input",model="mock-8b",tenant_tier="default"} 0
+inference_usage_tokens_total{direction="output",model="mock-8b",tenant_tier="default"} 0
+
+-- launching background inferbench streaming population (rate=4) --
+-- capturing one directly-observed raw SSE stream (long completion) --
+
+-- t+1.5s: docker kill -s SIGKILL inferops-mock-faults (at 2026-07-12T01:27:13+00:00); every stream is well past its 100ms TTFT --
+inferops-mock-faults
+-- waiting for the raw captured stream's curl to return --
+-- last 10 lines of the captured raw stream --
+
+id: 2
+data: {"id":"chatcmpl-8b8f04ae0de70c39e64dcef5","object":"chat.completion.chunk","created":1783641600,"model":"mock-8b","choices":[{"index":0,"delta":{"content":" valley"}}]}
+
+id: 3
+data: {"id":"chatcmpl-8b8f04ae0de70c39e64dcef5","object":"chat.completion.chunk","created":1783641600,"model":"mock-8b","choices":[{"index":0,"delta":{"content":" basalt"}}]}
+
+id: 4
+data: {"error":{"message":"Upstream backend failed mid-stream; the stream is closed and is never retried. Tokens already delivered are billable.","type":"upstream_error","code":null,"param":null,"request_id":"req_89ae0d0c66ffe7a42ad74a7da2e6eeca"}}
+
+
+-- restarting mock-faults so the inferbench population can finish (recovery, as in scenario 01) --
+backend_healthy after restart: 1
+
+-- waiting for the background inferbench population to finish --
+inferbench exit code: 0
+
+-- AFTER: usage/requests/retries counters --
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 44
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="upstream_error"} 5
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="upstream_timeout"} 8
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="overloaded"} 3
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="upstream_error"} 1
+inference_retries_total{stage="pre_first_token"} 0
+inference_usage_tokens_total{direction="input",model="mock-8b",tenant_tier="default"} 7367
+inference_usage_tokens_total{direction="output",model="mock-8b",tenant_tier="default"} 1609
+
+-- inferbench run summary --
+summary sent=60 ok=44 errors=13 shed=3 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=1.123277ms max_send_slip=1.817923ms usage_missing=0 wall=47.048s
+
+-- events with a non-null ttft (had begun streaming) whose final status was error --
+fs02-run-r1-000000 ttft= 0.104 output_tokens= 3 error_class= upstream_error
+fs02-run-r1-000003 ttft= 0.105 output_tokens= 2 error_class= upstream_error
+fs02-run-r1-000002 ttft= 0.105 output_tokens= 2 error_class= upstream_error
+fs02-run-r1-000001 ttft= 0.105 output_tokens= 3 error_class= upstream_error
+fs02-run-r1-000010 ttft= 0.104 output_tokens= 60 error_class= upstream_timeout
+fs02-run-r1-000012 ttft= 0.104 output_tokens= 60 error_class= upstream_timeout
+fs02-run-r1-000026 ttft= 0.103 output_tokens= 60 error_class= upstream_timeout
+fs02-run-r1-000027 ttft= 0.105 output_tokens= 60 error_class= upstream_timeout
+fs02-run-r1-000035 ttft= 0.105 output_tokens= 60 error_class= upstream_timeout
+fs02-run-r1-000036 ttft= 0.105 output_tokens= 60 error_class= upstream_timeout
+fs02-run-r1-000042 ttft= 0.104 output_tokens= 60 error_class= upstream_timeout
+fs02-run-r1-000057 ttft= 0.104 output_tokens= 60 error_class= upstream_timeout
+
+-- full status/error_class breakdown --
+('error', 'upstream_error') 5
+('error', 'upstream_timeout') 8
+('ok', None) 44
+('shed', 'overloaded') 3
+
+-- duplicate-request-id check (no request should ever appear twice) --
+duplicate_request_ids= none
+
+-- tearing down mock-faults / gateway-faults --
+
+Evidence directory: /home/user/inferops/faults/scenario-02/evidence/20260712T012710Z

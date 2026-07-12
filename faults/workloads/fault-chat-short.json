@@ -1,0 +1,29 @@
+{
+  "name": "fault-chat-short",
+  "version": "1.0.0",
+  "seed": 42042001,
+  "description": "Operational (non-canonical) short-duration variant of inferbench's chat-short.json (docs/experiments.md IO-T006/T007), scaled down to a bounded request_count so a fault-campaign injection window is short and deterministic to reproduce. NOT the canonical benchmark-report workload (that stays in inferbench's own repo, IB-T003) — this file exists only as fault-campaign client load and is versioned/seeded the same way per the shared Contract 3 schema.",
+  "arrival_process": {
+    "type": "open-loop-poisson",
+    "rate_rps": 5
+  },
+  "input_length_distribution": {
+    "type": "normal",
+    "mean": 120,
+    "stddev": 40,
+    "min": 16,
+    "max": 512
+  },
+  "output_length_distribution": {
+    "type": "lognormal",
+    "mu": 4.2,
+    "sigma": 0.5,
+    "min": 8,
+    "max": 200
+  },
+  "prefix_sharing": { "ratio": 0 },
+  "cancellation": { "rate": 0 },
+  "slow_client": { "fraction": 0 },
+  "stop": { "request_count": 60 },
+  "tags": ["fault-campaign", "operational"]
+}

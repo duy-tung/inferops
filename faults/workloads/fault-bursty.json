@@ -1,0 +1,33 @@
+{
+  "name": "fault-bursty",
+  "version": "1.0.0",
+  "seed": 42042006,
+  "description": "Operational (non-canonical) short-duration variant of inferbench's bursty.json for fault-campaign scenario 6 (queue saturation): a low base rate followed by a burst well above the admission bound of the deliberately tight gateway-faults instance (faults/scenario-06), so the queue-full shed path is exercised inside a short, bounded window.",
+  "arrival_process": {
+    "type": "open-loop-poisson",
+    "phases": [
+      { "duration_seconds": 5, "rate_rps": 2 },
+      { "duration_seconds": 15, "rate_rps": 25 }
+    ],
+    "repeat_phases": false
+  },
+  "input_length_distribution": {
+    "type": "normal",
+    "mean": 150,
+    "stddev": 50,
+    "min": 16,
+    "max": 512
+  },
+  "output_length_distribution": {
+    "type": "normal",
+    "mean": 150,
+    "stddev": 50,
+    "min": 16,
+    "max": 300
+  },
+  "prefix_sharing": { "ratio": 0 },
+  "cancellation": { "rate": 0 },
+  "slow_client": { "fraction": 0 },
+  "stop": { "duration_seconds": 20 },
+  "tags": ["fault-campaign", "operational", "admission-control", "queueing"]
+}

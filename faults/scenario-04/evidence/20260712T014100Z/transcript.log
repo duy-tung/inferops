@@ -1,0 +1,36 @@
+== Scenario 04 — slow client — 2026-07-12T01:41:00+00:00 ==
+-- starting mock-faults (baseline ttft/itl) + gateway-faults (-stream-write-timeout=3s, tightened from the 30s release default) --
+
+== Part A: a genuinely stalled raw-socket client (zero reads for 8s > 2.6x the 3s deadline) ==
+   Prompt 'count to a lot' is this repo's known deterministic seed=42 longer output
+   (drain-test.sh's header comment: 242 tokens), so there is plenty of data for TCP
+   backpressure to matter once the receive window (shrunk via SO_RCVBUF) fills.
+
+-- gateway-faults /metrics right after Part A (in-flight should be back to 0 once the socket above was closed by this script) --
+inference_requests_in_flight{backend="mock-faults"} 0
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 1
+
+== Part B: inferbench slow-client workload (population-level corroboration) ==
+inferbench exit code: 0
+
+-- inferbench summary --
+summary sent=30 ok=24 errors=6 shed=0 canceled=0 cancel_planned=0 slow_planned=9 max_dispatch_slip=1.713323ms max_send_slip=2.225485ms usage_missing=0 wall=1m7.526s
+
+-- slow (wall > 2.5s) vs fast population, and how each ended --
+slow (wall>2.5s): 9
+   ('ok', None, 12.05)
+   ('ok', None, 14.86)
+   ('ok', None, 22.01)
+   ('error', 'upstream_timeout', 60.0)
+   ('error', 'upstream_timeout', 60.0)
+   ('error', 'upstream_timeout', 60.0)
+   ('error', 'upstream_timeout', 60.0)
+   ('error', 'upstream_timeout', 60.0)
+   ('error', 'upstream_timeout', 60.0)
+fast (wall<=2.5s): 21
+
+-- inference_requests_in_flight after Part B settles: inference_requests_in_flight{backend="mock-faults"} 0 --
+
+-- tearing down --
+
+Evidence directory: /home/user/inferops/faults/scenario-04/evidence/20260712T014100Z

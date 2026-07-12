@@ -1,0 +1,29 @@
+== Scenario 04 — slow client — 2026-07-12T01:33:04+00:00 ==
+-- starting mock-faults (baseline ttft/itl) + gateway-faults (-stream-write-timeout=3s, tightened from the 30s release default so closure is observable quickly) --
+BEFORE: inference_requests_in_flight{backend="mock-faults"} 0
+
+-- running inferbench fault-slow-client.json (30% throttled to 128 B/s, 70% full speed) --
+inferbench exit code: 0
+
+-- AFTER (settle time given): inference_requests_in_flight{backend="mock-faults"} 0 --
+
+-- inferbench summary --
+summary sent=30 ok=24 errors=6 shed=0 canceled=0 cancel_planned=0 slow_planned=9 max_dispatch_slip=1.087571ms max_send_slip=1.671047ms usage_missing=0 wall=1m7.525s
+
+-- per-population breakdown (slow vs fast, from events.jsonl + reference workload) --
+likely-slow (wall > 2.5s) count: 9
+   ('ok', None, 12.052842, 0.224349751)
+   ('ok', None, 14.865714, 0.225430642)
+   ('ok', None, 22.004523, 0.223887488)
+   ('error', 'upstream_timeout', 60.00043, 0.22376154)
+   ('error', 'upstream_timeout', 60.000759, 0.222896838)
+   ('error', 'upstream_timeout', 60.000234, 0.223272819)
+   ('error', 'upstream_timeout', 60.000891, 0.224642931)
+   ('error', 'upstream_timeout', 60.00002, 0.22432412)
+   ('error', 'upstream_timeout', 60.000221, 0.223120718)
+likely-fast (wall <= 2.5s) count: 21
+fast-population ttft: n= 21 min= 0.022 p95= 0.025 max= 0.025
+
+-- tearing down --
+
+Evidence directory: /home/user/inferops/faults/scenario-04/evidence/20260712T013304Z

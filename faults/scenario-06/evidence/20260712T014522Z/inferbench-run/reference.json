@@ -1,0 +1,7 @@
+{
+  "workload_name": "fault-bursty",
+  "workload_version": "1.0.0",
+  "seed": 42042006,
+  "item_count": 399,
+  "schedule_fingerprint": "379ce3937d0477357c1b05f6e7c68a14dc30c3866e260d7f8cd1761725cb8510"
+}

@@ -1,0 +1,123 @@
+run_id=fs01-run-part2 repetition=1 requests=60 max_slip=100ms cancel_planned=0 slow_planned=0 prefix_sharing=0
+schedule item=0 offset=122.927694ms input_tokens=63 max_tokens=30
+schedule item=1 offset=225.166581ms input_tokens=131 max_tokens=87
+schedule item=2 offset=283.669642ms input_tokens=106 max_tokens=35
+schedule item=3 offset=337.193461ms input_tokens=56 max_tokens=76
+schedule item=4 offset=509.313006ms input_tokens=129 max_tokens=29
+schedule item=5 offset=1.145258937s input_tokens=111 max_tokens=92
+schedule item=6 offset=1.310818959s input_tokens=119 max_tokens=88
+schedule item=7 offset=1.330019933s input_tokens=135 max_tokens=52
+schedule item=8 offset=1.811551461s input_tokens=151 max_tokens=84
+schedule item=9 offset=3.614264948s input_tokens=105 max_tokens=45
+schedule item=10 offset=3.883341712s input_tokens=106 max_tokens=88
+schedule item=11 offset=4.177879719s input_tokens=139 max_tokens=93
+schedule item=12 offset=4.245781953s input_tokens=166 max_tokens=84
+schedule item=13 offset=4.295187513s input_tokens=85 max_tokens=54
+schedule item=14 offset=4.352310699s input_tokens=102 max_tokens=30
+schedule item=15 offset=4.721047903s input_tokens=128 max_tokens=48
+schedule item=16 offset=4.767263236s input_tokens=72 max_tokens=60
+schedule item=17 offset=5.049035091s input_tokens=56 max_tokens=98
+schedule item=18 offset=5.072375986s input_tokens=155 max_tokens=74
+schedule item=19 offset=5.0912175s input_tokens=125 max_tokens=57
+schedule item=20 offset=5.202370551s input_tokens=167 max_tokens=31
+schedule item=21 offset=6.19696804s input_tokens=179 max_tokens=81
+schedule item=22 offset=6.372495167s input_tokens=127 max_tokens=58
+schedule item=23 offset=6.49127405s input_tokens=83 max_tokens=45
+schedule item=24 offset=6.533223182s input_tokens=85 max_tokens=54
+schedule item=25 offset=6.634725784s input_tokens=180 max_tokens=46
+schedule item=26 offset=6.688472645s input_tokens=90 max_tokens=64
+schedule item=27 offset=6.825487745s input_tokens=143 max_tokens=101
+schedule item=28 offset=6.847435837s input_tokens=125 max_tokens=62
+schedule item=29 offset=6.871403314s input_tokens=111 max_tokens=61
+schedule item=30 offset=7.057465822s input_tokens=125 max_tokens=68
+schedule item=31 offset=7.087885928s input_tokens=88 max_tokens=54
+schedule item=32 offset=7.412020763s input_tokens=99 max_tokens=53
+schedule item=33 offset=7.553974876s input_tokens=104 max_tokens=30
+schedule item=34 offset=7.643221787s input_tokens=161 max_tokens=61
+schedule item=35 offset=7.765472217s input_tokens=142 max_tokens=65
+schedule item=36 offset=7.815027908s input_tokens=147 max_tokens=180
+schedule item=37 offset=8.119628559s input_tokens=97 max_tokens=88
+schedule item=38 offset=8.156113304s input_tokens=102 max_tokens=30
+schedule item=39 offset=8.294684685s input_tokens=87 max_tokens=66
+schedule item=40 offset=8.521772478s input_tokens=106 max_tokens=33
+schedule item=41 offset=8.719260142s input_tokens=86 max_tokens=67
+schedule item=42 offset=8.902829298s input_tokens=157 max_tokens=90
+schedule item=43 offset=8.965538125s input_tokens=121 max_tokens=50
+schedule item=44 offset=9.137087658s input_tokens=88 max_tokens=82
+schedule item=45 offset=9.560052397s input_tokens=114 max_tokens=79
+schedule item=46 offset=9.799900003s input_tokens=149 max_tokens=53
+schedule item=47 offset=9.816329251s input_tokens=163 max_tokens=73
+schedule item=48 offset=10.479003349s input_tokens=142 max_tokens=52
+schedule item=49 offset=10.767651934s input_tokens=119 max_tokens=23
+schedule item=50 offset=11.106479564s input_tokens=106 max_tokens=79
+schedule item=51 offset=11.428499549s input_tokens=151 max_tokens=15
+schedule item=52 offset=11.662479775s input_tokens=139 max_tokens=93
+schedule item=53 offset=12.150393069s input_tokens=84 max_tokens=72
+schedule item=54 offset=12.539294428s input_tokens=179 max_tokens=40
+schedule item=55 offset=12.935930091s input_tokens=177 max_tokens=81
+schedule item=56 offset=13.101595647s input_tokens=135 max_tokens=77
+schedule item=57 offset=13.635068143s input_tokens=109 max_tokens=200
+schedule item=58 offset=13.648515193s input_tokens=92 max_tokens=42
+schedule item=59 offset=13.679962037s input_tokens=201 max_tokens=69
+epoch=2026-07-12T01:24:45.748843Z
+request item=1 id=fs01-run-part2-r1-000001 status=error send_slip=1.375225ms body_sha256=
+request item=0 id=fs01-run-part2-r1-000000 status=ok send_slip=1.472298ms body_sha256=2d84dcd257d44569c049945a3a6183f829378b03a5b35476a010897f37e17d8e
+request item=2 id=fs01-run-part2-r1-000002 status=ok send_slip=1.09953ms body_sha256=795303778c1cbad8e048436f2cb4bdc711ffec5a68a25d97419e8944a61047e8
+request item=3 id=fs01-run-part2-r1-000003 status=error send_slip=1.393293ms body_sha256=
+request item=4 id=fs01-run-part2-r1-000004 status=error send_slip=457.804µs body_sha256=
+request item=5 id=fs01-run-part2-r1-000005 status=error send_slip=816.822µs body_sha256=
+request item=6 id=fs01-run-part2-r1-000006 status=ok send_slip=288.739µs body_sha256=8a8a2e87f5a9c29830e5d26eb255359d76311f14d895647be374f91022adb0e6
+request item=7 id=fs01-run-part2-r1-000007 status=ok send_slip=1.833128ms body_sha256=75709dd988a43fcf0631eff5be6eff521f221705aa977e29c2bcaa1adb8f616b
+request item=8 id=fs01-run-part2-r1-000008 status=error send_slip=778.261µs body_sha256=
+request item=10 id=fs01-run-part2-r1-000010 status=shed send_slip=248.486µs body_sha256=
+request item=9 id=fs01-run-part2-r1-000009 status=ok send_slip=580.713µs body_sha256=5454d1fbcbf98a8a20bafb255e6ba6c7dad94b8de1338b205114e7609c09569f
+request item=11 id=fs01-run-part2-r1-000011 status=shed send_slip=1.128895ms body_sha256=
+request item=12 id=fs01-run-part2-r1-000012 status=shed send_slip=782.801µs body_sha256=
+request item=13 id=fs01-run-part2-r1-000013 status=shed send_slip=885.244µs body_sha256=
+request item=14 id=fs01-run-part2-r1-000014 status=shed send_slip=1.469609ms body_sha256=
+request item=15 id=fs01-run-part2-r1-000015 status=shed send_slip=501.311µs body_sha256=
+request item=16 id=fs01-run-part2-r1-000016 status=shed send_slip=898.688µs body_sha256=
+request item=17 id=fs01-run-part2-r1-000017 status=shed send_slip=510.197µs body_sha256=
+request item=18 id=fs01-run-part2-r1-000018 status=shed send_slip=1.153923ms body_sha256=
+request item=19 id=fs01-run-part2-r1-000019 status=shed send_slip=719.154µs body_sha256=
+request item=20 id=fs01-run-part2-r1-000020 status=shed send_slip=1.024992ms body_sha256=
+request item=21 id=fs01-run-part2-r1-000021 status=shed send_slip=824.463µs body_sha256=
+request item=22 id=fs01-run-part2-r1-000022 status=shed send_slip=964.119µs body_sha256=
+request item=23 id=fs01-run-part2-r1-000023 status=shed send_slip=520.654µs body_sha256=
+request item=24 id=fs01-run-part2-r1-000024 status=shed send_slip=814.04µs body_sha256=
+request item=25 id=fs01-run-part2-r1-000025 status=shed send_slip=832.165µs body_sha256=
+request item=26 id=fs01-run-part2-r1-000026 status=shed send_slip=325.469µs body_sha256=
+request item=27 id=fs01-run-part2-r1-000027 status=shed send_slip=638.831µs body_sha256=
+request item=28 id=fs01-run-part2-r1-000028 status=shed send_slip=1.247955ms body_sha256=
+request item=29 id=fs01-run-part2-r1-000029 status=shed send_slip=828.825µs body_sha256=
+request item=30 id=fs01-run-part2-r1-000030 status=shed send_slip=1.253407ms body_sha256=
+request item=31 id=fs01-run-part2-r1-000031 status=shed send_slip=1.316512ms body_sha256=
+request item=32 id=fs01-run-part2-r1-000032 status=shed send_slip=1.077442ms body_sha256=
+request item=33 id=fs01-run-part2-r1-000033 status=shed send_slip=618.713µs body_sha256=
+request item=34 id=fs01-run-part2-r1-000034 status=shed send_slip=480.799µs body_sha256=
+request item=35 id=fs01-run-part2-r1-000035 status=shed send_slip=786.341µs body_sha256=
+request item=36 id=fs01-run-part2-r1-000036 status=shed send_slip=706.265µs body_sha256=
+request item=37 id=fs01-run-part2-r1-000037 status=shed send_slip=947.421µs body_sha256=
+request item=38 id=fs01-run-part2-r1-000038 status=shed send_slip=1.05988ms body_sha256=
+request item=39 id=fs01-run-part2-r1-000039 status=shed send_slip=873.464µs body_sha256=
+request item=40 id=fs01-run-part2-r1-000040 status=shed send_slip=378.802µs body_sha256=
+request item=41 id=fs01-run-part2-r1-000041 status=shed send_slip=314.356µs body_sha256=
+request item=42 id=fs01-run-part2-r1-000042 status=shed send_slip=332.103µs body_sha256=
+request item=44 id=fs01-run-part2-r1-000044 status=error send_slip=856.027µs body_sha256=
+request item=43 id=fs01-run-part2-r1-000043 status=ok send_slip=316.659µs body_sha256=014518d7bdd2eb4981bce04ce9b16da5d66d20ccd86e0118f75fbf19f6b58759
+request item=46 id=fs01-run-part2-r1-000046 status=error send_slip=1.153596ms body_sha256=
+request item=45 id=fs01-run-part2-r1-000045 status=ok send_slip=951.545µs body_sha256=9ce2dc7c550817b15e643a6efd0ade8e78a28749584d9831dc4c28f0c8a5e308
+request item=47 id=fs01-run-part2-r1-000047 status=ok send_slip=881.321µs body_sha256=d4c0fbf77bb4636f9d1ca2d00365badf6f720d924d8a1ac5cd2d38946c876205
+request item=48 id=fs01-run-part2-r1-000048 status=error send_slip=467.751µs body_sha256=
+request item=49 id=fs01-run-part2-r1-000049 status=error send_slip=319.716µs body_sha256=
+request item=50 id=fs01-run-part2-r1-000050 status=shed send_slip=337.226µs body_sha256=
+request item=51 id=fs01-run-part2-r1-000051 status=shed send_slip=1.142266ms body_sha256=
+request item=52 id=fs01-run-part2-r1-000052 status=shed send_slip=487.917µs body_sha256=
+request item=53 id=fs01-run-part2-r1-000053 status=shed send_slip=1.380238ms body_sha256=
+request item=54 id=fs01-run-part2-r1-000054 status=shed send_slip=1.380356ms body_sha256=
+request item=55 id=fs01-run-part2-r1-000055 status=shed send_slip=457.173µs body_sha256=
+request item=56 id=fs01-run-part2-r1-000056 status=shed send_slip=1.196876ms body_sha256=
+request item=57 id=fs01-run-part2-r1-000057 status=shed send_slip=665.21µs body_sha256=
+request item=58 id=fs01-run-part2-r1-000058 status=shed send_slip=597.356µs body_sha256=
+request item=59 id=fs01-run-part2-r1-000059 status=shed send_slip=575.513µs body_sha256=
+summary sent=60 ok=8 errors=9 shed=43 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=1.135586ms max_send_slip=1.833128ms usage_missing=0 wall=13.681s

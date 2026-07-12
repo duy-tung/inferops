@@ -1,0 +1,75 @@
+== Scenario 06 — queue saturation — 2026-07-12T01:45:22+00:00 ==
+-- starting mock-faults (itl=300ms, slow enough that in-flight slots stay occupied) + gateway-faults with tight admission caps --
+
+-- capturing one shed response directly during a manual concurrent burst (for the Retry-After header) --
+-- first shed (non-200) response's headers+body from the manual burst --
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+Retry-After: 1
+X-Request-Id: req_a7e2ff61eba45f72bab8fe3fae64a8fa
+Date: Sun, 12 Jul 2026 01:45:23 GMT
+Content-Length: 196
+
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+Retry-After: 1
+X-Request-Id: req_60fd54754ffbd6db0a24aac371a1d6ae
+Date: Sun, 12 Jul 2026 01:45:23 GMT
+Content-Length: 196
+
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+Retry-After: 1
+X-Request-Id: req_10fbc5e69e57135d313c38799e74adea
+Date: Sun, 12 Jul 2026 01:45:23 GMT
+Content-Length: 196
+
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+Retry-After: 1
+X-Request-Id: req_0902ba54fe54406b47e99d0b9828a9ab
+Date: Sun, 12 Jul 2026 01:45:23 GMT
+Content-Length: 196
+
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+Retry-After: 1
+X-Request-Id: req_9054d37c8366bf9d3abcf0d37f6ccc84
+Date: Sun, 12 Jul 2026 01:45:23 GMT
+Content-Length: 196
+
+---
+
+-- gateway-faults /metrics after the manual burst --
+inference_queue_depth{tenant_tier="default"} 0
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 4
+inference_requests_total{model="mock-8b",backend="unknown",tenant_tier="default",status_class="5xx",error_class="overloaded"} 16
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 16
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+-- running inferbench fault-bursty.json (2 rps base, 25 rps burst) --
+inferbench exit code: 0
+
+-- inferbench summary --
+summary sent=399 ok=3 errors=4 shed=392 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=4.652562ms max_send_slip=4.868734ms usage_missing=0 wall=48.962s
+
+-- ok-population ttft stats (accepted-request latency protection check) --
+n=3 min=0.024 p50=0.024 p95=0.024 max=0.024 (mock baseline ttft=20ms)
+
+-- shed/error breakdown --
+('error', 'upstream_timeout') 4
+('ok', None) 3
+('shed', 'overloaded') 392
+
+-- final sheds/queue-depth --
+inference_queue_depth{tenant_tier="default"} 0
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 408
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+-- tearing down --
+
+Evidence directory: /home/user/inferops/faults/scenario-06/evidence/20260712T014522Z

@@ -1,0 +1,32 @@
+== Scenario 05 — gateway termination during streaming — 2026-07-12T01:44:02+00:00 ==
+(see also: scripts/evidence/drain-test-20260711T234926Z/ for the IO-T004 single-instance proof)
+
+-- starting fleet: mock-faults + gateway-faults-a/-b + haproxy-faults --
+fleet ready
+
+-- launching background inferbench streaming population against the LB (rate=4) --
+
+-- t+2s: docker kill -s SIGTERM inferops-gateway-faults-a (at 2026-07-12T01:44:06+00:00) --
+inferops-gateway-faults-a
+-- polling gateway-faults-a's own /readyz directly (expect non-200 promptly) --
+  t+1s after SIGTERM: gateway-faults-a /readyz -> 000000
+  t+2s after SIGTERM: gateway-faults-a /readyz -> 000000
+  t+3s after SIGTERM: gateway-faults-a /readyz -> 000000
+
+-- waiting for gateway-faults-a's container to exit on its own --
+gateway-faults-a exited 0s after the poll loop above started (exit code: 0)
+
+-- restarting gateway-faults-a (same flags) so the LB has both replicas again --
+
+-- waiting for the background inferbench population to finish --
+inferbench exit code: 0
+
+-- inferbench summary --
+summary sent=60 ok=60 errors=0 shed=0 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=19.263198ms max_send_slip=19.464135ms usage_missing=0 wall=18.625s
+
+-- error/status breakdown --
+('ok', None) 60
+
+-- tearing down the fleet --
+
+Evidence directory: /home/user/inferops/faults/scenario-05/evidence/20260712T014402Z

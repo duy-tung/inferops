@@ -1,0 +1,63 @@
+run_id=fs04-run repetition=1 requests=30 max_slip=100ms cancel_planned=0 slow_planned=9 prefix_sharing=0
+schedule item=0 offset=245.383576ms input_tokens=131 max_tokens=179 slow_read_bps=128 slow_delay=200ms
+schedule item=1 offset=601.09778ms input_tokens=157 max_tokens=423
+schedule item=2 offset=755.48657ms input_tokens=104 max_tokens=128
+schedule item=3 offset=892.135243ms input_tokens=150 max_tokens=347
+schedule item=4 offset=911.46536ms input_tokens=175 max_tokens=346
+schedule item=5 offset=1.237686883s input_tokens=86 max_tokens=427
+schedule item=6 offset=2.115972972s input_tokens=89 max_tokens=260
+schedule item=7 offset=2.266904243s input_tokens=130 max_tokens=291 slow_read_bps=128 slow_delay=200ms
+schedule item=8 offset=2.280646422s input_tokens=155 max_tokens=231
+schedule item=9 offset=2.433709509s input_tokens=171 max_tokens=270
+schedule item=10 offset=2.534297428s input_tokens=191 max_tokens=245
+schedule item=11 offset=3.00690682s input_tokens=115 max_tokens=239
+schedule item=12 offset=3.451381848s input_tokens=178 max_tokens=208 slow_read_bps=128 slow_delay=200ms
+schedule item=13 offset=3.962301305s input_tokens=196 max_tokens=291
+schedule item=14 offset=4.294084454s input_tokens=171 max_tokens=313
+schedule item=15 offset=4.420906548s input_tokens=139 max_tokens=246
+schedule item=16 offset=4.627075541s input_tokens=150 max_tokens=345 slow_read_bps=128 slow_delay=200ms
+schedule item=17 offset=4.949339143s input_tokens=193 max_tokens=247
+schedule item=18 offset=5.013729887s input_tokens=225 max_tokens=340
+schedule item=19 offset=5.027676604s input_tokens=200 max_tokens=239 slow_read_bps=128 slow_delay=200ms
+schedule item=20 offset=5.043421882s input_tokens=193 max_tokens=140 slow_read_bps=128 slow_delay=200ms
+schedule item=21 offset=5.80017849s input_tokens=192 max_tokens=389
+schedule item=22 offset=6.213902031s input_tokens=159 max_tokens=198
+schedule item=23 offset=6.640807604s input_tokens=95 max_tokens=333
+schedule item=24 offset=6.70655497s input_tokens=160 max_tokens=456 slow_read_bps=128 slow_delay=200ms
+schedule item=25 offset=6.815290773s input_tokens=238 max_tokens=251
+schedule item=26 offset=7.180970676s input_tokens=121 max_tokens=290 slow_read_bps=128 slow_delay=200ms
+schedule item=27 offset=7.294244989s input_tokens=162 max_tokens=294
+schedule item=28 offset=7.508447399s input_tokens=172 max_tokens=345
+schedule item=29 offset=7.52367079s input_tokens=130 max_tokens=291 slow_read_bps=128 slow_delay=200ms
+epoch=2026-07-12T01:41:10.804834Z
+request item=2 id=fs04-run-r1-000002 status=ok send_slip=1.139489ms body_sha256=b09b65e9b06b73f371d0a52ca2d691c82081d2446899b92ac296e84b026a1dfc
+request item=1 id=fs04-run-r1-000001 status=ok send_slip=808.857µs body_sha256=78ce2f69268e89dff5777869fe821a7b967ecc2840163778176ebcde6a8f4eec
+request item=3 id=fs04-run-r1-000003 status=ok send_slip=1.301685ms body_sha256=3386210bd370a77fb8c692bff5478996384dd16e8dcd32a09e0931619b06e68c
+request item=4 id=fs04-run-r1-000004 status=ok send_slip=1.143879ms body_sha256=9ea86ced88d79b28ee1eaf0def2189f9f573a3a86519aff62b22bed182cc8d9e
+request item=9 id=fs04-run-r1-000009 status=ok send_slip=1.429817ms body_sha256=a43d3e8087e50b4e2c44ead31c22e7f90ec92049905d393f3e31659ebe3932fe
+request item=5 id=fs04-run-r1-000005 status=ok send_slip=784.622µs body_sha256=7ee8962c085936d3fd351b1e6deb67dda2015b3208e6f332b6eb45d275444992
+request item=6 id=fs04-run-r1-000006 status=ok send_slip=392.748µs body_sha256=a96ec82c5dc59761359b9ee7edfb607a31075faf35c67b199e719759a8fa37f3
+request item=8 id=fs04-run-r1-000008 status=ok send_slip=819.811µs body_sha256=59fe607a67c17160f8a9f8a4b57a68b10f85d5e82fc95a1d5ed91b15c50c8b57
+request item=11 id=fs04-run-r1-000011 status=ok send_slip=1.077809ms body_sha256=bda75721bbf40e91c6e03abaa1c45a91c78ba1d667af26456beed96a32abc81b
+request item=10 id=fs04-run-r1-000010 status=ok send_slip=1.064307ms body_sha256=9d3c20b4744e03ff6d35d8b95eeccdb1adfce6ec53ce34c0282d707efc3d21fc
+request item=15 id=fs04-run-r1-000015 status=ok send_slip=195.851µs body_sha256=be9ec49b182147fe959f2177cfd60b7a3e0fc2d53a2fb647799991683647588f
+request item=14 id=fs04-run-r1-000014 status=ok send_slip=1.234784ms body_sha256=5fc658f8e85dd273932fbbcae616a636a5c3c017fb34ac82c238e7ea8fad39a3
+request item=18 id=fs04-run-r1-000018 status=ok send_slip=1.628271ms body_sha256=3932b386ae89cacd8f20228e39a7374b34e1d2bb58d733f6b1f6333231a1d4e1
+request item=13 id=fs04-run-r1-000013 status=ok send_slip=599.517µs body_sha256=162b34549179dc108580f2c43c4a3274dd1316604d8424ca82a47b2f03d0e50b
+request item=22 id=fs04-run-r1-000022 status=ok send_slip=991.563µs body_sha256=4250f25045e1a0779191bff5f74a9e7572874166e549a5dd268f2b9f3445b02d
+request item=17 id=fs04-run-r1-000017 status=ok send_slip=1.160395ms body_sha256=ef22108939cf4602f1758c97904950b6fc60b6e87db93f90225bb7c237c77f9e
+request item=21 id=fs04-run-r1-000021 status=ok send_slip=925.033µs body_sha256=0726d6c7598f53cb10f8c6c9b9a9f908193904c8191a5ce5ff23d5b517079b2a
+request item=27 id=fs04-run-r1-000027 status=ok send_slip=1.089473ms body_sha256=d4a5524b844deb167545459adb858789b26169c87fbfa8719d0520f99f738c7f
+request item=28 id=fs04-run-r1-000028 status=ok send_slip=1.384357ms body_sha256=33813688a101f4e4100d25ddc02f2ae500e5bcc823ab7d5d1dc7b26ed9da5ad2
+request item=25 id=fs04-run-r1-000025 status=ok send_slip=1.399023ms body_sha256=784646787e838086467157468060fc120bf6b485d3157be0a4143c1d9ee534ea
+request item=23 id=fs04-run-r1-000023 status=ok send_slip=1.363937ms body_sha256=587e4c0d9d841f38cb16142f5f302dd228e28483e1642e39ee04a6ecffc3107e
+request item=24 id=fs04-run-r1-000024 status=ok send_slip=626.219µs body_sha256=1627c3759e6a49843e60d23ef646c113bd8f06f89b35ca0677a1c4b8ace9b7ab
+request item=20 id=fs04-run-r1-000020 status=ok send_slip=1.539123ms body_sha256=d4af5128b86ae31036b9695ac0dc699f197250391555ef099de3b22bdf51efb1
+request item=0 id=fs04-run-r1-000000 status=ok send_slip=1.917299ms body_sha256=9751b94972e7cc69e7f37689f80b2635a8d208e9ad8d1a2c34483adcd87bb4f1
+request item=7 id=fs04-run-r1-000007 status=error send_slip=1.500609ms body_sha256=576447deb09a99769cd92d29abc7161023b213e52a3fb137a08ff4ea3d24ef66
+request item=12 id=fs04-run-r1-000012 status=error send_slip=459.315µs body_sha256=b3f3dc853571d7fbf9f92669626b2e75f99a6018cf4f60be6cb5ecee7c0605a2
+request item=16 id=fs04-run-r1-000016 status=error send_slip=498.576µs body_sha256=1d43fd39acb6772e06ad0bbbdcb441c6ce1cab701b46789190562fd20a39fe7d
+request item=19 id=fs04-run-r1-000019 status=error send_slip=1.382478ms body_sha256=02ac21a189a457ef573e8043aa4fdeaf24a288ea88a39817a024027ba4b9aab8
+request item=26 id=fs04-run-r1-000026 status=error send_slip=535.256µs body_sha256=f2539de1f1b307b9bb725386897e3646425fe3f82b7bfe435ab258f5b1568bb7
+request item=29 id=fs04-run-r1-000029 status=error send_slip=2.225485ms body_sha256=e265ff5cf6b4da142ff23428d6aa6b1e56b34a6e5274c4fd4fc4f734f86c0d7a
+summary sent=30 ok=24 errors=6 shed=0 canceled=0 cancel_planned=0 slow_planned=9 max_dispatch_slip=1.713323ms max_send_slip=2.225485ms usage_missing=0 wall=1m7.526s

@@ -37,6 +37,36 @@ scrape_configs:
           app: llama-cpp
           component: engine
 
+  # IO-T006/T007 fault campaign: ad hoc gateway instances the campaign
+  # scripts create/recreate (docker run, same released digest, tuned
+  # flags per scenario — faults/lib.sh). Container names are fixed and
+  # reused across scenario runs so these targets are stable; a target is
+  # simply "down" (harmless) between campaign runs when the container
+  # doesn't exist.
+  - job_name: infergate-gateway-faults
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway-faults:8080"]
+        labels:
+          app: infergate
+          component: gateway-faults
+
+  - job_name: infergate-gateway-faults-a
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway-faults-a:8080"]
+        labels:
+          app: infergate
+          component: gateway-faults-a
+
+  - job_name: infergate-gateway-faults-b
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway-faults-b:8080"]
+        labels:
+          app: infergate
+          component: gateway-faults-b
+
   - job_name: otel-collector
     static_configs:
       - targets: ["otel-collector:8888"]

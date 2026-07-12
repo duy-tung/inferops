@@ -1,0 +1,33 @@
+{
+  "name": "fault-slow-client",
+  "version": "1.0.0",
+  "seed": 42042004,
+  "description": "Operational (non-canonical) short-duration variant of inferbench's slow-client.json, scaled down for fault-campaign scenario 4 (fast to reproduce). 30% of requests are throttled-read clients; the rest read at full speed so the co-scheduled fast population's TTFT can be checked against baseline.",
+  "arrival_process": {
+    "type": "open-loop-poisson",
+    "rate_rps": 3
+  },
+  "input_length_distribution": {
+    "type": "normal",
+    "mean": 150,
+    "stddev": 50,
+    "min": 16,
+    "max": 512
+  },
+  "output_length_distribution": {
+    "type": "normal",
+    "mean": 300,
+    "stddev": 100,
+    "min": 64,
+    "max": 768
+  },
+  "prefix_sharing": { "ratio": 0 },
+  "cancellation": { "rate": 0 },
+  "slow_client": {
+    "fraction": 0.3,
+    "read_bytes_per_second": 128,
+    "initial_read_delay_seconds": 0.2
+  },
+  "stop": { "request_count": 30 },
+  "tags": ["fault-campaign", "operational", "backpressure"]
+}

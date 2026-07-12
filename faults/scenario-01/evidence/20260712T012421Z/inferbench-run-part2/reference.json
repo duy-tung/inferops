@@ -1,0 +1,7 @@
+{
+  "workload_name": "fault-chat-short",
+  "workload_version": "1.0.0",
+  "seed": 42042001,
+  "item_count": 60,
+  "schedule_fingerprint": "7b8c64a509e1164830eedbf74596cf14d51f222929294c6db17d74b7b8ab1394"
+}

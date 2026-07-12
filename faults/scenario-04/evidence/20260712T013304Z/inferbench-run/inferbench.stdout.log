@@ -1,0 +1,2 @@
+run fs04-run: sent=30 ok=24 errors=6 shed=0 canceled=0 max_dispatch_slip=1.087571ms max_send_slip=1.671047ms wall=1m7.525s
+artifacts: /home/user/inferops/faults/scenario-04/evidence/20260712T013304Z/inferbench-run

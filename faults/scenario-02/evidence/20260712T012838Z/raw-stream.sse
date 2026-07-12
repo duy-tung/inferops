@@ -1,0 +1,15 @@
+id: 0
+data: {"id":"chatcmpl-8b8f04ae0de70c39e64dcef5","object":"chat.completion.chunk","created":1783641600,"model":"mock-8b","choices":[{"index":0,"delta":{"role":"assistant","content":""}}]}
+
+id: 1
+data: {"id":"chatcmpl-8b8f04ae0de70c39e64dcef5","object":"chat.completion.chunk","created":1783641600,"model":"mock-8b","choices":[{"index":0,"delta":{"content":"xenon"}}]}
+
+id: 2
+data: {"id":"chatcmpl-8b8f04ae0de70c39e64dcef5","object":"chat.completion.chunk","created":1783641600,"model":"mock-8b","choices":[{"index":0,"delta":{"content":" valley"}}]}
+
+id: 3
+data: {"id":"chatcmpl-8b8f04ae0de70c39e64dcef5","object":"chat.completion.chunk","created":1783641600,"model":"mock-8b","choices":[{"index":0,"delta":{"content":" basalt"}}]}
+
+id: 4
+data: {"error":{"message":"Upstream backend failed mid-stream; the stream is closed and is never retried. Tokens already delivered are billable.","type":"upstream_error","code":null,"param":null,"request_id":"req_9b58e45fc2edd8fddc2d7d8304f7bfd0"}}
+

@@ -1,0 +1,7 @@
+{
+  "workload_name": "fault-slow-client",
+  "workload_version": "1.0.0",
+  "seed": 42042004,
+  "item_count": 30,
+  "schedule_fingerprint": "c18aff723839c018c2076c4ff59705427c655dbbc53e4bd3fc8f710ad3e98765"
+}

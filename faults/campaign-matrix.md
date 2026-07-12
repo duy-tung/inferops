@@ -32,7 +32,7 @@ reduction was needed.
 - **12/12 scenarios executed** — no scope reduction triggered; the never-cut streaming-critical
   set (1, 2, 5, 6, 11, 12) all ran in full, with inferbench client-impact numbers for 1, 2, 5, 6,
   12 as required.
-- **9/12 verdicts: expected-semantics-matched** (2, 5, 6\*, 7\*, 8, 9, 11, 12, and 1\*/3\*/10\*
+- **11/12 verdicts: expected-semantics-matched** (6 fully clean: 2, 5, 8, 9, 11, 12; 5 matched with documented non-defect deviations: 6\*, 7\*, and 1\*/3\*/10\*
   matched with documented, non-defect deviations — marked `*` below).
 - **1/12 verdict: deviation-documented (a real observation, not matched)** — **scenario 4** (slow
   client / write-deadline enforcement). This is the campaign's one finding that reads as a defect

@@ -6,6 +6,62 @@ Running log of notable events: surprises, ecosystem drift, fallbacks taken, cont
 
 ## Running log
 
+### 2026-07-12 — IO-T010 executed
+
+- **Config rollout (fault scenario 8, in-cluster-analog):** exercised against
+  `compose/docker-compose.llamacpp.yml`'s `gateway-llamacpp` instance (the one gateway in this
+  repo actually running in `-config`-file/reloadable mode — see the IO-T005 entry below for why
+  the main `-auth-mode=db` `gateway` service cannot demonstrate this). `scripts/config-rollout.sh`:
+  started concurrent background load (short completions every ~400ms + one streaming completion
+  every ~3s) against the live gateway, mid-load rewrote `compose/llama-cpp/gateway-config.json`
+  to add a second model alias, triggered `POST /admin/v1/config/reload` from inside the
+  container's own network (admin port never published, `docs/security.md` §4), verified the new
+  alias appeared in `/v1/models` and served a real completion, then rewrote the config back to
+  the original content and reloaded again (rollback). **Result: 0/24 short requests and 0/4
+  streaming requests were dropped/failed across the whole rollout+rollback window**
+  (`scripts/evidence/config-rollout-20260712T002939Z/`); `config_version` transitioned
+  `v1-ef7cb1f4` → `v2-9412dd42` (rollout) → `v3-00dda759` (rollback — a new version even though
+  content reverted, since `config.Store.Reload()` publishes a new monotonic version on every
+  successful call, per its own doc comment). Honesty note recorded in the script itself: had any
+  request failed, the script reports the real count, not a silently-retried green.
+  - **A real correctness subtlety, verified rather than assumed:** the config file is bind-mounted
+    into the container read-only at a single path. Docker single-file bind mounts track the
+    specific inode present at container start; a host-side `mv new old` (rename) would NOT be
+    visible inside the container (the same reason Kubernetes ConfigMap volumes use an atomic
+    `..data` symlink swap rather than in-place file replacement for exactly this failure mode).
+    `scripts/config-rollout.sh` therefore overwrites the SAME inode directly (Python `open(...,
+    'w').write(...)`), which Docker's bind mount does reflect immediately — verified by the
+    reload actually picking up the new content on the first try.
+- **Secret strategy formalized** (`docs/security.md` §1): `scripts/create-k8s-secrets.sh` creates
+  the two Kubernetes Secret objects (`usage-db-credentials`, `api-key-pepper`) the existing
+  Kustomize bases already reference via `secretKeyRef`, from the same out-of-band files
+  `scripts/gen-dev-secrets.sh` generates for compose. Idempotent (`kubectl apply` of a
+  `--dry-run=client`-rendered manifest), never echoes a secret value. Verified against the live
+  k3s API server: both Secrets created in `inferops-local` with exactly the expected key names
+  (`scripts/evidence/create-k8s-secrets-20260712/transcript.log`). Rotation walked through for
+  real against the lowest-risk credential in the stack, Grafana's admin password
+  (`scripts/rotate-grafana-admin-secret.sh`, `scripts/evidence/rotate-grafana-secret-20260712T003319Z/`,
+  3/3 checks: old value worked before, new value works after, old value rejected after) —
+  **finding recorded, not glossed over:** Grafana's `GF_SECURITY_ADMIN_PASSWORD__FILE` only seeds
+  the password at first boot; rotating an already-provisioned instance requires its own
+  `grafana cli admin reset-admin-password`, not just a secret-file swap + restart. Rotating the DB
+  DSN/pepper for real was deliberately NOT exercised live (would invalidate the smoke-test API key
+  issued under the current pepper) — documented as a conscious scope choice, not an oversight.
+- **Upgrade/rollback procedure** (`scripts/upgrade.sh`, `scripts/rollback.sh`): digest bump →
+  running-container digest confirmed (not just the compose file) → smoke green → rollback →
+  running-container digest confirmed → smoke green. Demonstrated with two REAL, distinct digests
+  of the llama-cpp engine image (a label-only rebuild via `EXTRA_LABEL`, content-identical
+  otherwise) — infergate's own gateway/mock-backend images remain at the single released v0.1.0
+  digest, the same limitation `docs/testing.md` already records honestly for
+  `scripts/rolling-update-test.sh`. **Result:** upgrade to `sha256:bb177695bf...` — running
+  digest confirmed, smoke 22/22
+  (`scripts/evidence/upgrade-20260712T003059Z/`); rollback to `sha256:43af71918d...` — running
+  digest confirmed, smoke 22/22 (`scripts/evidence/rollback-20260712T003121Z/`). The pins-file
+  advance step is deliberately a printed, human-reviewed note (`docs/security.md` §3), not an
+  auto-edit — this test build was never intended to become the real pin, and indeed the repo's
+  committed state ends back at the original digest (verified via `git status`/`git diff` after
+  running both scripts).
+
 ### 2026-07-12 — IO-T005 executed (GPU gate G6 — CPU fallback per this task's own instruction)
 
 - **GPU path deferred, as instructed:** no GPU node was rented this session. Executed the

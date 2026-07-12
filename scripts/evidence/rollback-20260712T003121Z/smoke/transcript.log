@@ -1,0 +1,52 @@
+== inferops IO-T005 llama.cpp real-inference smoke — 2026-07-12T00:31:28+00:00 ==
+gateway: http://127.0.0.1:8082 (auth-mode=none, backend=llamacpp)
+
+-- GET /healthz --
+PASS  healthz  (HTTP 200)
+-- GET /readyz --
+PASS  readyz  (HTTP 200)
+-- GET /metrics --
+PASS  metrics reachable  (HTTP 200)
+-- GET /v1/models --
+PASS  models  (HTTP 200)
+PASS  /home/user/inferops/scripts/evidence/rollback-20260712T003121Z/smoke/models-response.json  [api.models-response]
+
+validate: 1/1 file(s) valid against 'api.models-response'
+PASS  schema:api.models-response  GET /v1/models
+PASS  models list carries the configured alias
+
+-- POST /v1/chat/completions (non-stream, REAL inference) --
+PASS  non-stream chat completion  (HTTP 200)
+PASS  /home/user/inferops/scripts/evidence/rollback-20260712T003121Z/smoke/chat-completion-response.json  [api.chat-completion-response]
+
+validate: 1/1 file(s) valid against 'api.chat-completion-response'
+PASS  schema:api.chat-completion-response  non-stream response
+-- llamacpp-adapter normalization checks (non-stream) --
+PASS  model echoed as configured alias (not llama-server's raw gguf path)
+PASS  no llama-server non-standard extras leaked to client
+
+-- POST /v1/chat/completions (stream, REAL inference) --
+PASS  stream chat completion  (HTTP 200)
+PASS  stream terminal sentinel data: [DONE] present
+PASS  /home/user/inferops/scripts/evidence/rollback-20260712T003121Z/smoke/chat-completion-stream.sse  [api.stream-event]
+
+validate: 1/1 file(s) valid against 'api.stream-event'
+PASS  schema:api.stream-event  SSE transcript
+PASS  no llama-server non-standard extras leaked in stream chunks
+PASS  created pinned to one value across the whole stream
+
+-- Cancellation: client disconnects mid-stream (real, not simulated) --
+PASS  gateway classifies the disconnect as canceled (not an upstream error)
+PASS  gateway records cancel_point=mid_stream
+PASS  llama-server observed the cancellation and freed the slot
+
+-- Post-cancellation liveness: a fresh request still succeeds (slot was freed, not leaked) --
+PASS  post-cancellation request  (HTTP 200)
+
+-- GET /metrics (after) — backend=llamacpp series present, cancellation counted --
+PASS  metrics reachable (after)  (HTTP 200)
+PASS  inference_backend_healthy{backend=llamacpp}=1
+PASS  inference_requests_total counted the canceled request honestly
+
+== Summary: 22 passed, 0 failed ==
+Evidence directory: /home/user/inferops/scripts/evidence/rollback-20260712T003121Z/smoke

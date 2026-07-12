@@ -1,0 +1,4 @@
+0.07.190.920 I slot get_availabl: id  1 | task -1 | selected slot by LCP similarity, sim_best = 0.462 (> 0.100 thold), f_keep = 0.471
+0.07.192.155 I slot launch_slot_: id  1 | task 14 | processing task, is_child = 0
+0.07.792.463 W srv          stop: cancel task, id_task = 14
+0.07.842.935 I slot      release: id  1 | task 14 | stop processing: n_tokens = 58, truncated = 0

@@ -1,0 +1,172 @@
+== inferops IO-T010 upgrade procedure — 2026-07-12T00:30:59+00:00 ==
+current (pre-upgrade) digest: sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be
+
+-- 1/5: building the vNext candidate (label-only rebuild, same pinned llama.cpp commit) --
+== 1/5: verifying llama.cpp pinned commit ==
+llama.cpp commit: 8f114a9b573b69035299f9b924047f53c1e22c7e (matches pin)
+
+== 2/6: assembling build context (binary + ldd-identified shared libs only) ==
+build context contents:
+total 20312
+drwxr-xr-x 2 root root    4096 Jul 12 00:30 .
+drwx------ 3 root root    4096 Jul 12 00:30 ..
+lrwxrwxrwx 1 root root      22 Jul 11 22:25 libggml-base.so.0 -> libggml-base.so.0.16.0
+-rwxr-xr-x 1 root root  913600 Jul 11 22:25 libggml-base.so.0.16.0
+lrwxrwxrwx 1 root root      21 Jul 11 22:25 libggml-cpu.so.0 -> libggml-cpu.so.0.16.0
+-rwxr-xr-x 1 root root 1329512 Jul 11 22:25 libggml-cpu.so.0.16.0
+lrwxrwxrwx 1 root root      17 Jul 11 22:25 libggml.so.0 -> libggml.so.0.16.0
+-rwxr-xr-x 1 root root   56376 Jul 11 22:25 libggml.so.0.16.0
+lrwxrwxrwx 1 root root      24 Jul 11 22:27 libllama-common.so.0 -> libllama-common.so.0.0.1
+-rwxr-xr-x 1 root root 5945600 Jul 11 22:27 libllama-common.so.0.0.1
+-rwxr-xr-x 1 root root 6996440 Jul 10 09:15 libllama-server-impl.so
+lrwxrwxrwx 1 root root      17 Jul 11 22:26 libllama.so.0 -> libllama.so.0.0.1
+-rwxr-xr-x 1 root root 4084216 Jul 11 22:26 libllama.so.0.0.1
+lrwxrwxrwx 1 root root      16 Jul 10 09:13 libmtmd.so.0 -> libmtmd.so.0.0.1
+-rwxr-xr-x 1 root root 1429000 Jul 10 09:13 libmtmd.so.0.0.1
+-rwxr-xr-x 1 root root   17920 Jul 10 09:15 llama-server
+
+== 3/6: docker build ==
+(building with extra label: inferops.upgrade-test=20260712T003059Z — upgrade/rollback mechanics test build)
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.46kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/ubuntu@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 DONE 0.0s
+
+#5 [1/5] FROM docker.io/library/ubuntu@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90
+#5 resolve docker.io/library/ubuntu@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90 0.0s done
+#5 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 20.78MB 0.2s done
+#4 DONE 0.2s
+
+#6 [2/5] RUN apt-get update &&     apt-get install -y --no-install-recommends libgomp1 libssl3t64 ca-certificates curl &&     rm -rf /var/lib/apt/lists/*
+#6 CACHED
+
+#7 [3/5] COPY bin/ /usr/local/lib/llama.cpp/
+#7 CACHED
+
+#8 [4/5] RUN ln -s /usr/local/lib/llama.cpp/llama-server /usr/local/bin/llama-server
+#8 CACHED
+
+#9 [5/5] RUN useradd --system --no-create-home --uid 10001 llamacpp
+#9 CACHED
+
+#10 exporting to image
+#10 exporting layers done
+#10 exporting manifest sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2 0.0s done
+#10 exporting config sha256:bab84ac1ff2b79d779582479a8808a8998285cc5e7c9af3e54697fdfeace219f
+#10 exporting config sha256:bab84ac1ff2b79d779582479a8808a8998285cc5e7c9af3e54697fdfeace219f 0.0s done
+#10 naming to docker.io/library/infergate-llamacpp-engine:8f114a9-upgrade-candidate done
+#10 unpacking to docker.io/library/infergate-llamacpp-engine:8f114a9-upgrade-candidate done
+#10 DONE 0.1s
+
+== 4/6: recording image digest (docker inspect .Id) ==
+image: infergate-llamacpp-engine:8f114a9-upgrade-candidate
+image id: sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2
+
+== 5/6: confirming the content-addressable digest via a throwaway local registry ==
+confirmed content digest: sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2
+
+== 6/6: recording model checksum ==
+model: /home/user/tools/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+model sha256: 6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e
+
+== smoke: container starts and reports its own version ==
+version: 1 (8f114a9)
+built with GNU 13.3.0 for Linux x86_64
+
+== SUMMARY (record these in docs/implementation-notes.md) ==
+llama.cpp commit:      8f114a9b573b69035299f9b924047f53c1e22c7e
+image tag:             infergate-llamacpp-engine:8f114a9-upgrade-candidate
+image id:              sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2
+model path:            /home/user/tools/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+model sha256:          6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e
+new (candidate) digest: sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2
+
+-- 2/5: deploying the candidate digest (compose/docker-compose.llamacpp.yml) --
+    image: infergate-llamacpp-engine@sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2
+time="2026-07-12T00:31:07Z" level=warning msg="Found orphan containers ([inferops-haproxy inferops-gateway-a inferops-gateway-b inferops-grafana inferops-otel-collector inferops-prometheus inferops-tempo]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container inferops-llama-cpp Recreate 
+ Container inferops-llama-cpp Recreated 
+ Container inferops-llama-cpp Starting 
+ Container inferops-llama-cpp Started 
+inferops-llama-cpp health: healthy
+
+-- 3/5: confirming the RUNNING container actually uses the new digest (not just the compose file) --
+running container image digest: sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2
+PASS: running container confirmed on the new digest
+
+-- 4/5: observe — smoke test against the upgraded engine --
+== inferops IO-T005 llama.cpp real-inference smoke — 2026-07-12T00:31:13+00:00 ==
+gateway: http://127.0.0.1:8082 (auth-mode=none, backend=llamacpp)
+
+-- GET /healthz --
+PASS  healthz  (HTTP 200)
+-- GET /readyz --
+PASS  readyz  (HTTP 200)
+-- GET /metrics --
+PASS  metrics reachable  (HTTP 200)
+-- GET /v1/models --
+PASS  models  (HTTP 200)
+PASS  schema:api.models-response  GET /v1/models
+PASS  models list carries the configured alias
+
+-- POST /v1/chat/completions (non-stream, REAL inference) --
+PASS  non-stream chat completion  (HTTP 200)
+PASS  schema:api.chat-completion-response  non-stream response
+-- llamacpp-adapter normalization checks (non-stream) --
+PASS  model echoed as configured alias (not llama-server's raw gguf path)
+PASS  no llama-server non-standard extras leaked to client
+
+-- POST /v1/chat/completions (stream, REAL inference) --
+PASS  stream chat completion  (HTTP 200)
+PASS  stream terminal sentinel data: [DONE] present
+PASS  schema:api.stream-event  SSE transcript
+PASS  no llama-server non-standard extras leaked in stream chunks
+PASS  created pinned to one value across the whole stream
+
+-- Cancellation: client disconnects mid-stream (real, not simulated) --
+PASS  gateway classifies the disconnect as canceled (not an upstream error)
+PASS  gateway records cancel_point=mid_stream
+PASS  llama-server observed the cancellation and freed the slot
+
+-- Post-cancellation liveness: a fresh request still succeeds (slot was freed, not leaked) --
+PASS  post-cancellation request  (HTTP 200)
+
+-- GET /metrics (after) — backend=llamacpp series present, cancellation counted --
+PASS  metrics reachable (after)  (HTTP 200)
+PASS  inference_backend_healthy{backend=llamacpp}=1
+PASS  inference_requests_total counted the canceled request honestly
+
+== Summary: 22 passed, 0 failed ==
+Evidence directory: /home/user/inferops/scripts/evidence/upgrade-20260712T003059Z/smoke
+PASS: smoke green on the upgraded digest (sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2)
+PASS  inference_backend_healthy{backend=llamacpp}=1
+PASS  inference_requests_total counted the canceled request honestly
+
+== Summary: 22 passed, 0 failed ==
+Evidence directory: /home/user/inferops/scripts/evidence/upgrade-20260712T003059Z/smoke
+
+-- 5/5: summary ==
+previous digest: sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be
+new digest:      sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2
+smoke verdict:   PASS
+state saved:     /home/user/inferops/scripts/evidence/upgrade-rollback-state/llama-cpp.previous-digest (used by scripts/rollback.sh)
+Evidence directory: /home/user/inferops/scripts/evidence/upgrade-20260712T003059Z
+
+Pins-file advance (manual, human-reviewed step per docs/security.md §3):
+  if this were a real release, docs/implementation-notes.md's llama-cpp pin
+  would now change from sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be to sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2.
+  This script does not auto-edit docs — pin advancement is a reviewed step.

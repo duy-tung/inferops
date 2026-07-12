@@ -1,0 +1,19 @@
+== ensuring namespace inferops-local exists ==
+
+== creating/updating Secret: usage-db-credentials (keys: dsn, postgres-password) ==
+secret/usage-db-credentials unchanged
+
+== creating/updating Secret: api-key-pepper (key: pepper) ==
+secret/api-key-pepper unchanged
+
+== verification: Secret objects exist with the expected key NAMES (never printing values) ==
+NAME                   TYPE     DATA   AGE
+usage-db-credentials   Opaque   2      7s
+api-key-pepper         Opaque   1      7s
+
+-- usage-db-credentials keys --
+['dsn', 'postgres-password']
+-- api-key-pepper keys --
+['pepper']
+
+== done: inferops-local/usage-db-credentials, inferops-local/api-key-pepper ==

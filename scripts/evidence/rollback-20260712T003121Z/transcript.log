@@ -1,0 +1,72 @@
+== inferops IO-T010 rollback procedure — 2026-07-12T00:31:21+00:00 ==
+currently deployed digest: sha256:bb177695bfb057deea87ec5fca488fb0b131ce1ce85677d1a378b3c22be8bdc2
+rolling back to:           sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be
+
+-- 1/4: reverting the digest pin --
+    image: infergate-llamacpp-engine@sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be
+time="2026-07-12T00:31:22Z" level=warning msg="Found orphan containers ([inferops-haproxy inferops-gateway-a inferops-gateway-b inferops-grafana inferops-otel-collector inferops-prometheus inferops-tempo]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container inferops-llama-cpp Recreate 
+ Container inferops-llama-cpp Recreated 
+ Container inferops-llama-cpp Starting 
+ Container inferops-llama-cpp Started 
+inferops-llama-cpp health: healthy
+
+-- 2/4: confirming the RUNNING container is back on the previous digest --
+running container image digest: sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be
+PASS: running container confirmed back on the previous digest
+
+-- 3/4: observe — smoke test after rollback --
+== inferops IO-T005 llama.cpp real-inference smoke — 2026-07-12T00:31:28+00:00 ==
+gateway: http://127.0.0.1:8082 (auth-mode=none, backend=llamacpp)
+
+-- GET /healthz --
+PASS  healthz  (HTTP 200)
+-- GET /readyz --
+PASS  readyz  (HTTP 200)
+-- GET /metrics --
+PASS  metrics reachable  (HTTP 200)
+-- GET /v1/models --
+PASS  models  (HTTP 200)
+PASS  schema:api.models-response  GET /v1/models
+PASS  models list carries the configured alias
+
+-- POST /v1/chat/completions (non-stream, REAL inference) --
+PASS  non-stream chat completion  (HTTP 200)
+PASS  schema:api.chat-completion-response  non-stream response
+-- llamacpp-adapter normalization checks (non-stream) --
+PASS  model echoed as configured alias (not llama-server's raw gguf path)
+PASS  no llama-server non-standard extras leaked to client
+
+-- POST /v1/chat/completions (stream, REAL inference) --
+PASS  stream chat completion  (HTTP 200)
+PASS  stream terminal sentinel data: [DONE] present
+PASS  schema:api.stream-event  SSE transcript
+PASS  no llama-server non-standard extras leaked in stream chunks
+PASS  created pinned to one value across the whole stream
+
+-- Cancellation: client disconnects mid-stream (real, not simulated) --
+PASS  gateway classifies the disconnect as canceled (not an upstream error)
+PASS  gateway records cancel_point=mid_stream
+PASS  llama-server observed the cancellation and freed the slot
+
+-- Post-cancellation liveness: a fresh request still succeeds (slot was freed, not leaked) --
+PASS  post-cancellation request  (HTTP 200)
+
+-- GET /metrics (after) — backend=llamacpp series present, cancellation counted --
+PASS  metrics reachable (after)  (HTTP 200)
+PASS  inference_backend_healthy{backend=llamacpp}=1
+PASS  inference_requests_total counted the canceled request honestly
+
+== Summary: 22 passed, 0 failed ==
+Evidence directory: /home/user/inferops/scripts/evidence/rollback-20260712T003121Z/smoke
+PASS: smoke green after rollback (sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be)
+PASS  inference_backend_healthy{backend=llamacpp}=1
+PASS  inference_requests_total counted the canceled request honestly
+
+== Summary: 22 passed, 0 failed ==
+Evidence directory: /home/user/inferops/scripts/evidence/rollback-20260712T003121Z/smoke
+
+-- 4/4: summary ==
+rolled back to digest: sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be
+smoke verdict:         PASS
+Evidence directory: /home/user/inferops/scripts/evidence/rollback-20260712T003121Z

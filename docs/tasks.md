@@ -155,6 +155,22 @@ Critical path: **IO-T002 → IO-T003 → IO-T004 → IO-T005 → I5 → IO-T006 
 
 ## IO-T010 — Config rollout + secrets + upgrade procedure
 
+- **Status: DONE (2026-07-12).** Config rollout: `scripts/config-rollout.sh` against the IO-T005
+  `gateway-llamacpp` instance (ADR-0002 snapshot swap via `-config` + admin-endpoint reload) —
+  **0/24 short requests and 0/4 streaming requests dropped** across a live rollout (new model
+  alias added) and rollback (`scripts/evidence/config-rollout-20260712T002939Z/`),
+  `config_version` v1→v2→v3. Secret strategy formalized: `scripts/create-k8s-secrets.sh` creates
+  the two Kubernetes Secrets the existing Kustomize bases reference, validated against a live k3s
+  API server (`scripts/evidence/create-k8s-secrets-20260712/`); rotation walked through for real
+  on the lowest-risk credential (Grafana admin password,
+  `scripts/evidence/rotate-grafana-secret-20260712T003319Z/`, 3/3 passed) with the
+  first-boot-only-seeding finding recorded honestly. Upgrade/rollback:
+  `scripts/upgrade.sh`/`scripts/rollback.sh` exercised with two REAL distinct digests of the
+  llama-cpp engine image (infergate's own gateway/mock-backend remain single-digest, same
+  limitation as `scripts/rolling-update-test.sh`) — digest bump → running-container digest
+  confirmed → smoke 22/22 → rollback → digest confirmed → smoke 22/22
+  (`scripts/evidence/{upgrade,rollback}-20260712T00*/`). Full detail in
+  `docs/implementation-notes.md` and `docs/security.md` §1/§3.
 - **Goal/Repo:** harden the operational procedures: in-cluster config rollout (fault scenario 8 mechanics), secret strategy, upgrade/rollback. inferops.
 - **Requirement:** config rollout procedure exercised in-cluster under traffic (pairs with scenario 8); secret strategy documented and implemented (no secrets in manifests — see `docs/security.md`); upgrade and rollback procedures scripted and verified (digest bump → smoke → pins-file advance; rollback to previous digest).
 - **Dependencies:** IO-T004.

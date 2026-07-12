@@ -1,0 +1,11 @@
+{
+  "backend": {
+    "name": "llamacpp",
+    "type": "llamacpp",
+    "url": "http://llama-cpp:8080"
+  },
+  "models": ["qwen2.5-1.5b-instruct"],
+  "owned_by": "inferops",
+  "upstream_timeout": "60s",
+  "stream_write_timeout": "60s"
+}

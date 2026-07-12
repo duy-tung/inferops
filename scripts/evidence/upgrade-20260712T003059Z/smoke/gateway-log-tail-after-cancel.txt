@@ -1,0 +1,12 @@
+time=2026-07-12T00:15:24.110Z level=INFO msg="config snapshot published" config_version=v1-ef7cb1f4 models=qwen2.5-1.5b-instruct backend=llamacpp publish_latency=97.725µs
+time=2026-07-12T00:15:24.112Z level=INFO msg="backend health transition" backend=mock healthy=false
+time=2026-07-12T00:15:24.112Z level=INFO msg="admin API listening" addr=:8090
+time=2026-07-12T00:15:24.112Z level=INFO msg="gateway listening" addr=:8080 backend=llamacpp models=qwen2.5-1.5b-instruct config_version=v1-ef7cb1f4
+time=2026-07-12T00:16:07.661Z level=INFO msg="request canceled by client disconnect" request_id=req_bd4b9721f004c79c773989578654e877 error_class=canceled cancel_point=mid_stream status=499
+time=2026-07-12T00:17:39.359Z level=INFO msg="request canceled by client disconnect" request_id=req_5da3d7a032e7e9bdaf40bd0cf5adcd3f error_class=canceled cancel_point=mid_stream status=499
+time=2026-07-12T00:26:53.581Z level=INFO msg="request canceled by client disconnect" request_id=req_c73f0bdbe028794c6ab6085e895e631c error_class=canceled cancel_point=mid_stream status=499
+time=2026-07-12T00:29:43.151Z level=INFO msg="config snapshot published" config_version=v2-9412dd42 models=qwen2.5-1.5b-instruct,qwen2.5-1.5b-instruct-v2 backend=llamacpp publish_latency=115.587µs
+time=2026-07-12T00:29:43.151Z level=INFO msg="config reloaded" trigger=admin config_version=v2-9412dd42 trigger_to_publish=159.037µs
+time=2026-07-12T00:29:49.671Z level=INFO msg="config snapshot published" config_version=v3-00dda759 models=qwen2.5-1.5b-instruct backend=llamacpp publish_latency=90.147µs
+time=2026-07-12T00:29:49.671Z level=INFO msg="config reloaded" trigger=admin config_version=v3-00dda759 trigger_to_publish=129.763µs
+time=2026-07-12T00:31:15.795Z level=INFO msg="request canceled by client disconnect" request_id=req_52b5926f93638c85585175553c5a0da6 error_class=canceled cancel_point=mid_stream status=499

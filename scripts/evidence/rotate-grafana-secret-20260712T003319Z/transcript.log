@@ -1,0 +1,46 @@
+== inferops IO-T010 secret rotation walkthrough (Grafana admin) — 2026-07-12T00:33:19+00:00 ==
+-- 1/5: verify the OLD credential currently works --
+  GET /api/org with old credential: HTTP 200
+
+-- 2/5: create new Secret version (generate + write, never logged) --
+  new value written to /home/user/inferops/compose/secrets/grafana_admin_password.txt (gitignored, dev-grade, not printed here)
+
+-- 3/5: roll the consumer (grafana cli admin reset-admin-password against the live container) --
+logger=settings t=2026-07-12T00:33:19.714785828Z level=info msg="Starting Grafana" version=11.3.1 commit=64b556c137a1d9bcacd19ccb16c4cf138c78ca40 branch=v11.3.x compiled=2026-07-12T00:33:19Z
+logger=settings t=2026-07-12T00:33:19.71516283Z level=info msg="Config loaded from" file=/usr/share/grafana/conf/defaults.ini
+logger=settings t=2026-07-12T00:33:19.715180957Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_DATA=/var/lib/grafana"
+logger=settings t=2026-07-12T00:33:19.715199836Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_LOGS=/var/log/grafana"
+logger=settings t=2026-07-12T00:33:19.715205298Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_PLUGINS=/var/lib/grafana/plugins"
+logger=settings t=2026-07-12T00:33:19.715211421Z level=info msg="Config overridden from Environment variable" var="GF_PATHS_PROVISIONING=/etc/grafana/provisioning"
+logger=settings t=2026-07-12T00:33:19.71521728Z level=info msg="Config overridden from Environment variable" var="GF_ANALYTICS_REPORTING_ENABLED=false"
+logger=settings t=2026-07-12T00:33:19.71522293Z level=info msg="Config overridden from Environment variable" var="GF_ANALYTICS_CHECK_FOR_UPDATES=false"
+logger=settings t=2026-07-12T00:33:19.7152328Z level=info msg="Config overridden from Environment variable" var="GF_AUTH_DISABLE_LOGIN_FORM=false"
+logger=settings t=2026-07-12T00:33:19.715238149Z level=info msg=Target target=[all]
+logger=settings t=2026-07-12T00:33:19.715251022Z level=info msg="Path Home" path=/usr/share/grafana
+logger=settings t=2026-07-12T00:33:19.715256133Z level=info msg="Path Data" path=/var/lib/grafana
+logger=settings t=2026-07-12T00:33:19.715263282Z level=info msg="Path Logs" path=/var/log/grafana
+logger=settings t=2026-07-12T00:33:19.715268245Z level=info msg="Path Plugins" path=/var/lib/grafana/plugins
+logger=settings t=2026-07-12T00:33:19.715273733Z level=info msg="Path Provisioning" path=/etc/grafana/provisioning
+logger=settings t=2026-07-12T00:33:19.715278827Z level=info msg="App mode production"
+logger=featuremgmt t=2026-07-12T00:33:19.71554166Z level=info msg=FeatureToggles dashboardScene=true nestedFolders=true cloudWatchRoundUpEndTime=true logsExploreTableVisualisation=true ssoSettingsApi=true publicDashboards=true influxdbBackendMigration=true alertingInsights=true promQLScope=true logsContextDatasourceUi=true groupToNestedTableTransformation=true managedPluginsInstall=true logRowsPopoverMenu=true recoveryThreshold=true transformationsVariableSupport=true panelMonitoring=true openSearchBackendFlowEnabled=true prometheusAzureOverrideAudience=true exploreMetrics=true awsAsyncQueryCaching=true lokiQuerySplitting=true tlsMemcached=true cloudWatchNewLabelParsing=true accessControlOnCall=true lokiStructuredMetadata=true dataplaneFrontendFallback=true transformationsRedesign=true alertingSimplifiedRouting=true logsInfiniteScrolling=true prometheusMetricEncyclopedia=true recordedQueriesMulti=true addFieldFromCalculationStatFunctions=true autoMigrateXYChartPanel=true prometheusConfigOverhaulAuth=true notificationBanner=true dashboardSceneForViewers=true annotationPermissionUpdate=true lokiQueryHints=true pinNavItems=true alertingNoDataErrorExecution=true formatString=true dashboardSceneSolo=true angularDeprecationUI=true topnav=true dashgpt=true publicDashboardsScene=true kubernetesPlaylists=true correlations=true cloudWatchCrossAccountQuerying=true lokiMetricDataplane=true
+logger=sqlstore t=2026-07-12T00:33:19.715680104Z level=info msg="Connecting to DB" dbtype=sqlite3
+logger=migrator t=2026-07-12T00:33:19.722578742Z level=info msg="Locking database"
+logger=migrator t=2026-07-12T00:33:19.72265316Z level=info msg="Starting DB migrations"
+logger=migrator t=2026-07-12T00:33:19.737936129Z level=info msg="migrations completed" performed=0 skipped=611 duration=830.007µs
+logger=migrator t=2026-07-12T00:33:19.738625853Z level=info msg="Unlocking database"
+logger=secrets t=2026-07-12T00:33:19.739226888Z level=info msg="Envelope encryption state" enabled=true currentprovider=secretKey.v1
+New Password: 
+Admin password changed successfully ✔
+
+  reset-admin-password executed
+
+-- 4/5: verify --
+  GET /api/org with NEW credential: HTTP 200 (expect 200)
+  GET /api/org with OLD credential: HTTP 401 (expect 401 — old value must no longer work)
+
+-- 5/5: delete old version --
+  the old value existed only in the secret file (now overwritten) and this script's
+  local variable (unset below, never committed/logged) — no separate copy remains.
+
+== Summary: 3/3 checks passed ==
+Evidence directory: /home/user/inferops/scripts/evidence/rotate-grafana-secret-20260712T003319Z

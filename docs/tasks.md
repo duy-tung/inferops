@@ -159,10 +159,29 @@ Critical path: **IO-T002 → IO-T003 → IO-T004 → IO-T005 → I5 → IO-T006 
 
 ## IO-T008 — Runbooks
 
+- **Status: DONE (2026-07-12).** 10 runbooks authored under `runbooks/` (+ `runbooks/README.md`
+  index), each drawn from procedures this repo has already exercised and evidenced — no invented
+  steps. **7/10 walkthroughs live-cited** (deploy, upgrade, rollback, drain, backend-failure,
+  config-rollback, capacity-shortfall — each citing real IO-T002/T004/T006/T007/T009/T010 evidence,
+  plus fresh read-only re-confirmation of the currently-running deploy for `deploy.md`); **2/10
+  tabletop** (performance-regression — no live regression incident exists in this repo's evidence
+  to cite; observability-outage — a live pass was attempted this session, but the harness's own
+  workload-safety guard declined to kill the four shared observability containers, correctly, per
+  this task's own instruction not to disrupt a stack another agent may be using); **1/10 mixed**
+  (database-outage — the steady-state case is live-cited from fault scenario 9, the DB-down-at-
+  startup case is tabletop, traced against IO-T004's documented finding). The Google SRE
+  overload/cascading-failures review lens (retry amplification, load shedding, cascade containment)
+  is applied explicitly in `backend-failure.md`, `capacity-shortfall.md`, and
+  `performance-regression.md`. Full detail and the honest gap list: `runbooks/README.md`.
+- **Deviation recorded (non-scope-changing):** walkthroughs are embedded as an in-file
+  **Walkthrough** section in each runbook rather than a separate `runbooks/walkthroughs/*.md`
+  directory (see `docs/implementation-notes.md`) — an operator reading a runbook during an
+  incident benefits from the walkthrough notes living next to the procedure, not cross-referenced
+  in a parallel file.
 - **Goal/Repo:** write and verify the 10 operational runbooks. inferops.
 - **Requirement:** runbooks for **deploy, upgrade, rollback, drain, backend failure, performance regression, config rollback, capacity shortfall, observability outage, database outage** — each with preconditions, steps, verification commands, and rollback path; each verified by tabletop or live walkthrough with notes. Apply the Google SRE overload/cascading-failures review lens to the backend-failure, capacity-shortfall, and performance-regression runbooks.
 - **Dependencies:** IO-T004 (plus IO-T005/T007 for the runbooks whose subjects need them).
-- **Expected files:** `runbooks/{deploy,upgrade,rollback,drain,backend-failure,performance-regression,config-rollback,capacity-shortfall,observability-outage,database-outage}.md`, `runbooks/walkthroughs/*.md`.
+- **Expected files:** `runbooks/{deploy,upgrade,rollback,drain,backend-failure,performance-regression,config-rollback,capacity-shortfall,observability-outage,database-outage}.md`, `runbooks/walkthroughs/*.md` (delivered as an in-file "Walkthrough" section per runbook instead — see Deviations above).
 - **Complexity:** M. **Critical path:** no. **Parallel-safe:** yes.
 - **Human-review focus:** runbook accuracy — every command in a runbook must have been actually run in a walkthrough.
 - **Verification:** tabletop or live walkthrough per runbook, notes captured.

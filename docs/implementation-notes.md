@@ -6,6 +6,57 @@ Running log of notable events: surprises, ecosystem drift, fallbacks taken, cont
 
 ## Running log
 
+### 2026-07-12 — IO-T008 executed (10 runbooks, I7/I8)
+
+- **All 10 runbooks authored under `runbooks/`** (+ `runbooks/README.md` index), each built from
+  procedures this repo has already exercised and evidenced — every command in a runbook is a real
+  command from an existing script or a documented `kubectl`/`docker` equivalent, never invented.
+  Mapping used: deploy → IO-T002 (`scripts/smoke.sh`); upgrade/rollback → IO-T010
+  (`scripts/{upgrade,rollback}.sh`); drain → IO-T004 (`scripts/drain-test.sh`) + fault scenario 5;
+  backend-failure → fault scenarios 1/2/10; performance-regression → IO-T009's signal-comparison
+  experiment + the fleetlab-comparison corpus in `experiments/autoscaling/results.md`;
+  config-rollback → IO-T010 (`scripts/config-rollout.sh`) + fault scenario 8; capacity-shortfall →
+  IO-T009's scaling demo; observability-outage → IO-T003's stack + the still-open H4 hypothesis;
+  database-outage → fault scenario 9.
+- **Walkthrough status, honestly labeled per runbook** (full detail in each file's own
+  "Walkthrough" section and summarized in `runbooks/README.md`):
+  - **Live-cited (7/10):** deploy, upgrade, rollback, drain, backend-failure, config-rollback,
+    capacity-shortfall — each cites this repo's own real, dated evidence directories.
+  - **Tabletop (2/10):** performance-regression (no live regression incident exists anywhere in
+    this repo's evidence to cite end-to-end — IO-T009 is a controlled experiment, not a regression
+    response; the runbook's diagnosis steps are traced against IO-T009's measured signal-lag
+    numbers and fault scenario 6's admission-protection finding); observability-outage (see the
+    finding below).
+  - **Mixed (1/10):** database-outage — the steady-state case (DB dies while the gateway is
+    already running) is live-cited from fault scenario 9; the DB-down-at-startup case is tabletop,
+    traced against IO-T004's `config.OpenDBStore` one-shot-no-retry finding rather than
+    independently re-triggered this session.
+- **A live walkthrough was attempted for observability-outage (hypothesis H4, deferred from
+  IO-T003) and correctly declined, not worked around.** Baseline traffic was confirmed healthy
+  first (5/5 authenticated `POST /v1/chat/completions` returned 200 against the live, currently-
+  running stack). The next step — stopping `otel-collector`/`prometheus`/`tempo`/`grafana` to
+  observe an unchanged gateway success rate — was declined by this session's own workload-safety
+  guard: killing four shared containers this session did not create, on a stack another agent
+  could be concurrently using, is exactly the kind of disruption this task's own instructions said
+  to avoid. The runbook is written as a full tabletop trace instead (architecture: Prometheus
+  scrapes pull-based, OTLP export is async/non-blocking on the gateway's request path — both
+  confirmed from IO-T003's own implementation-notes entry, not re-derived), with the gap surfaced
+  explicitly in `runbooks/README.md` rather than silently marked done. **H4 itself remains an open
+  item** for a future session with either exclusive stack access or a deliberately scheduled
+  maintenance window.
+- **No other gaps found while tracing the remaining 8 runbooks against the real scripts** — every
+  step in the live-cited runbooks matches an actual command in `scripts/*.sh` or `faults/*/inject.sh`
+  and the cited evidence directories were re-checked to exist and contain the claimed numbers
+  (`scripts/evidence/*`, `faults/scenario-*/evidence/*`, `experiments/autoscaling/evidence/*`) —
+  no runbook step was found to contradict the actual deployed behavior.
+- **Deviation recorded:** each runbook embeds its walkthrough as an in-file **Walkthrough** section
+  rather than a separate `runbooks/walkthroughs/*.md` file (the original expected-files line in
+  `docs/tasks.md`/the master planning prompt names both groups separately). Conservative,
+  reversible, does not change scope/contracts/security posture: an operator reading a runbook
+  during an incident benefits from the walkthrough notes (what was actually run, what gaps remain)
+  living next to the procedure itself, and a parallel `walkthroughs/` directory would only
+  duplicate the same evidence links under a different heading.
+
 ### 2026-07-12 — IO-T009 executed (autoscaling experiments, I6 verification arm)
 
 - **RQ-14 applies again, as it does to every IO task**: this environment cannot schedule any

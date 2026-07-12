@@ -6,6 +6,99 @@ Running log of notable events: surprises, ecosystem drift, fallbacks taken, cont
 
 ## Running log
 
+### 2026-07-12 — IO-T005 executed (GPU gate G6 — CPU fallback per this task's own instruction)
+
+- **GPU path deferred, as instructed:** no GPU node was rented this session. Executed the
+  documented CPU fallback: a real llama.cpp engine wired behind the gateway, serving genuine
+  inference through the compose stack, PLUS a GPU-node-profile Deployment manifest authored and
+  validated against a live k3s API server but never scheduled (extends D-1 below). Full detail:
+  `docs/gpu-node-profile.md`.
+- **llama.cpp engine image** (`compose/llama-cpp/Dockerfile`, `scripts/build-llamacpp-image.sh`):
+  packages the ALREADY-BUILT `llama-server` binary from `/home/user/tools/llama.cpp`
+  (commit `8f114a9b573b69035299f9b924047f53c1e22c7e`, pin-checked by the build script, which
+  refuses to run against any other commit) — no llama.cpp source read or vendored, only the
+  binary + the exact shared libraries `ldd` reports it needs (copied with the SONAME symlink
+  chain preserved). Base image `ubuntu@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90`
+  (glibc 2.39, matching the host the binary was linked against). Non-root (uid 10001).
+  **Digests: image `infergate-llamacpp-engine:8f114a9@sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be`
+  (confirmed content-addressable via a throwaway local-registry push/pull-back, the same method
+  this repo's IO-T002 entry records for infergate's own images); model
+  `qwen2.5-1.5b-instruct-q4_k_m.gguf` sha256
+  `6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e`** (1.1 GB, mounted read-only
+  into the container rather than baked into the image, per Contract 5 `model_mount`).
+- **Reproducibility finding (recorded honestly):** the FIRST two builds of this image (before this
+  fix) produced two DIFFERENT digests from byte-identical inputs
+  (`sha256:c8828b6a...`, then `sha256:5add44e4...` after adding `curl` — that second change was
+  real; but a THIRD rebuild with NO further changes still produced a fourth different digest,
+  `sha256:a2c25075...`, proving the non-determinism). Root cause: BuildKit's default provenance
+  attestation embeds non-reproducible build metadata into the image's manifest list. Fixed with
+  `--provenance=false`; re-verified three consecutive identical-input rebuilds all produced the
+  same digest (`sha256:43af71918d...`) before this became the digest recorded everywhere in this
+  repo (compose file, k8s manifest). The two earlier, now-orphaned digests are not referenced
+  anywhere in the committed repo state. See `docs/security.md` §3.
+- **Finding, load-bearing for how the gateway is wired (not a workaround):** infergate's released
+  `gateway` binary's legacy flags (`-backend-name`, `-backend-url`) **always** construct the
+  generic OpenAI-HTTP adapter regardless of `-backend-name`'s value —
+  `cmd/gateway/main.go`: `backend.NewOpenAIHTTP(*backendName, ...)` unconditionally (read via
+  `git show` against the infergate repo present in this environment, interface-understanding
+  only, no source copied or built from). The llama.cpp-specific adapter
+  (`internal/backend/llamacpp`, which strips llama-server's non-standard response extras
+  `timings`/`system_fingerprint`/`usage.prompt_tokens_details`, normalizes the echoed model alias,
+  and pins `created` across a stream) is only reachable through the `-config <file>` JSON path's
+  `"backend":{"type":"llamacpp"}` selector (`internal/config/store.go` `buildBackend`) — and
+  `-config` is the release's own documented no-op under `-auth-mode=db` ("`-config` is ignored
+  under `-auth-mode=db`; models and tenancy come from PostgreSQL", logged by the binary itself).
+  Since the existing `gateway` service (IO-T002) runs `-auth-mode=db` to genuinely exercise
+  tenancy/Postgres, it structurally cannot select the llamacpp adapter. **Consequence:** a SEPARATE
+  gateway instance, `gateway-llamacpp` (`compose/docker-compose.llamacpp.yml`), runs
+  `-auth-mode=none -config=/etc/infergate/gateway-config.json`, which both selects the real
+  llamacpp adapter AND is exactly ADR-0002's reloadable-snapshot mechanism IO-T010 reuses for the
+  config-rollout test. This is filed here as a documentation-accuracy candidate for
+  infergate/serving-contracts (the deployment-contract descriptor's `notes` field does not mention
+  that `-backend-name` is a label only, never an adapter selector) — not filed as a blocking
+  defect, since the conservative, fully-functional workaround (a second gateway instance) was
+  available and is what a real deployment choosing the llamacpp engine would do anyway (auth mode
+  and backend adapter are independent axes in the descriptor).
+- **llama-server CLI quirk:** its flag parser rejects `--flag=value` syntax (`error: invalid
+  argument: --host=0.0.0.0`) and requires space-separated `--flag value` — unlike infergate's own
+  flags, which accept both. Verified directly before writing the compose command list.
+- **Real inference smoke, end-to-end through the stack**
+  (`scripts/llamacpp-smoke.sh`, `scripts/evidence/llamacpp-smoke-20260712T002650Z/`, **22/22
+  passed**): non-stream + streaming completions against the real quantized model; the llamacpp
+  adapter's own normalization contract verified directly (model echoed as the configured alias,
+  never llama-server's raw gguf path; no `timings`/`system_fingerprint`/`prompt_tokens_details`
+  leaked to the client; `created` pinned to one value across an entire stream, even though
+  llama-server itself restamps it per chunk); a REAL client-disconnect cancellation (not
+  simulated) observed at both ends — the gateway logs `error_class=canceled
+  cancel_point=mid_stream status=499`, and llama-server's own log shows `srv stop: cancel task`
+  with the slot released — followed by a fresh request succeeding (proving the slot was freed, not
+  leaked); `/metrics` after the run shows `inference_backend_healthy{backend="llamacpp"} 1` and
+  the canceled request correctly counted in `inference_requests_total{...,error_class="canceled"}`.
+- **GPU-node-profile shell** (`deploy/llama-cpp/base/*`, `clusters/gpu-node/*`): a CPU-realistic
+  base Deployment (matching the compose engine exactly: same digest, same launch args, `/health`
+  probes) with a Kustomize patch (`clusters/gpu-node/gpu-profile-patch.yaml`) layering
+  `nodeSelector`/`tolerations`/`resources.limits."nvidia.com/gpu"` on top — "as they WOULD be for a
+  real GPU node," clearly commented as authored-not-scheduled. **Stated honestly: this specific
+  llama-server build has no CUDA backend compiled in** (`ldd` shows only `libggml-cpu.so`; no
+  `libggml-cuda.so`/`libggml-hip.so` anywhere in the build tree) — so even on a real GPU node this
+  exact image would not use the GPU. A real GPU session would need a CUDA rebuild or vLLM (see
+  `docs/gpu-node-profile.md` §2). **Validated against the live k3s API server**
+  (`clusters/gpu-node/validate-k3s.sh`, `clusters/gpu-node/evidence/k3s-validation-20260712.txt`):
+  4 objects rendered with 0 build errors; the GPU-profile fields confirmed present in the rendered
+  YAML; a real `kubectl apply -k` created all 4 objects in etcd; `kubectl describe pod` confirms
+  the resulting Pod carries `Node-Selectors: inferops.dev/gpu-class=l4-24gb`,
+  `Tolerations: ... nvidia.com/gpu:NoSchedule op=Exists`, and `Limits/Requests:
+  nvidia.com/gpu: 1` **exactly as authored** (proving the patch actually applied, not just
+  parsed); the Pod stayed `Pending` with `Node: <none>` (zero Nodes registered,
+  `--disable-agent`) — proving no scheduling decision, GPU or otherwise, was ever made. Same
+  `FailedBinding: no persistent volumes available` PVC condition as `deploy/postgres-dev`'s (A-3)
+  — expected, harmless.
+- **Not done this session (recorded honestly, per `docs/gpu-node-profile.md` §1):** NVIDIA device
+  plugin install, driver/CUDA version recording, the program's GPU-session rule (written
+  hypothesis + auto-stop script + budget alert + teardown) — none of these apply without an
+  actual rented GPU node. Placeholder fields left in `docs/gpu-node-profile.md` §5 for a real
+  session.
+
 ### 2026-07-11 — IO-T004 executed
 
 - **Topology:** `compose/docker-compose.lifecycle.yml` adds two named gateway replicas
@@ -212,3 +305,34 @@ Running log of notable events: surprises, ecosystem drift, fallbacks taken, cont
   images, warm-up-aware readiness, zero-error rolling update, golden dashboards, end-to-end traces
   — are all still produced, just on compose instead of a scheduled Kubernetes cluster); it was
   pre-approved by the user (RQ-14, 2026-07-11) before this task began.
+
+### D-1 extension — IO-T005 GPU fallback (2026-07-12)
+
+- **Evidence:** unchanged from D-1 above — this sandbox cannot schedule any pod, GPU or CPU. G6
+  (the GPU gate) was additionally never opened this session: no GPU node was rented, no budget
+  session was started. This is the CPU fallback IO-T005's own task brief explicitly authorizes
+  ("the GPU path is deferred (no GPU). Execute the documented fallback"), not a new discovery.
+- **Decision (conservative, reversible, pre-authorized by the task brief itself):** deploy a real
+  llama.cpp CPU engine on the compose stack, wired behind a dedicated gateway instance, smoke
+  tested end-to-end with real inference (streaming + cancellation). Author the GPU-node-profile
+  Deployment (`clusters/gpu-node/`) as a shell: real scheduling metadata (`nodeSelector`,
+  `tolerations`, `nvidia.com/gpu` resource limit) validated against the live k3s API server
+  exactly like every other manifest in this repo, but never applied to a real cluster and never
+  scheduled.
+- **Consequences:** IO-T005's "in-cluster vLLM serves via the gateway" verification criterion
+  (`docs/tasks.md`) is not met as originally scoped (no vLLM, no GPU) — the CPU-fallback substitute
+  criterion instead applies: a real llama.cpp engine, real completions, real cancellation, through
+  the compose stack, plus the profile shell. `docs/gpu-node-profile.md` records exactly what was
+  and was not done, including the honest limitation that this session's specific llama-server
+  build has no CUDA backend (so the profile's own image would not exploit a GPU node even if one
+  were scheduled onto it).
+- **Follow-up:** if/when G6 opens (a GPU node is rented), `clusters/gpu-node/gpu-profile-patch.yaml`
+  is the starting point — re-verify its `nodeSelector` value against the real provider's node
+  labels, rebuild llama.cpp with `-DGGML_CUDA=ON` (or bring up vLLM per the original plan,
+  `docs/architecture.md` §2.3), and follow the program's GPU-session rule (written hypothesis,
+  config manifest, auto-stop script, budget alert, teardown verification) before the session
+  starts.
+- Not paused for further user input: this extends D-1 without changing any public contract,
+  repository ownership, or milestone scope beyond what D-1 and this task's own brief already
+  cover; the brief itself states the expected deviation verbatim ("Deviation: GPU node profile
+  authored + validated but engine runs CPU llama.cpp in compose (extends D-1)").

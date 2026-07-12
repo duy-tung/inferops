@@ -16,6 +16,27 @@ scrape_configs:
           app: infergate
           component: gateway
 
+  # IO-T005: the llama.cpp-backed gateway instance (backend="llamacpp" in
+  # Contract 2 metric labels) and the engine's own Contract 4 metrics
+  # endpoint. Both targets are optional at compose-up time (the `llamacpp`
+  # profile is not started by default) — an absent target just shows as a
+  # down scrape here, harmless.
+  - job_name: infergate-gateway-llamacpp
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway-llamacpp:8080"]
+        labels:
+          app: infergate
+          component: gateway-llamacpp
+
+  - job_name: llama-cpp-engine
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["llama-cpp:8080"]
+        labels:
+          app: llama-cpp
+          component: engine
+
   - job_name: otel-collector
     static_configs:
       - targets: ["otel-collector:8888"]

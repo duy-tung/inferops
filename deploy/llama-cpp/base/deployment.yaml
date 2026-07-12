@@ -1,0 +1,102 @@
+# CPU-realistic base: matches the engine actually serving traffic in this
+# session (compose/docker-compose.llamacpp.yml's `llama-cpp` service,
+# IO-T005). Not pod-scheduled in this environment (RQ-14 compose-pivot,
+# docs/implementation-notes.md "Deviations") — validated with
+# `kubectl apply --dry-run=server` / a real (server-only) k3s API server,
+# clusters/gpu-node/validate-k3s.sh. See clusters/gpu-node/gpu-profile-patch.yaml
+# for the GPU-node-profile SHELL layered on top of this same base (IO-T005's
+# "authored, not scheduled" honest artifact — G6 gate is closed this
+# session, no GPU rented).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama-cpp
+  labels:
+    app.kubernetes.io/name: llama-cpp
+    app.kubernetes.io/component: engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llama-cpp
+      app.kubernetes.io/component: engine
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: llama-cpp
+        app.kubernetes.io/component: engine
+    spec:
+      # No GPU-node scheduling constraints here — this is the plain CPU
+      # base. clusters/gpu-node/gpu-profile-patch.yaml adds
+      # nodeSelector/tolerations/resources.limits."nvidia.com/gpu" on top,
+      # never applied to a real cluster this session.
+      terminationGracePeriodSeconds: 90
+      containers:
+        - name: llama-cpp
+          # scripts/build-llamacpp-image.sh; digest recorded in
+          # docs/implementation-notes.md and docs/gpu-node-profile.md.
+          image: infergate-llamacpp-engine:8f114a9@sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be
+          args:
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8080"
+            - --model
+            - /models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+            - --parallel
+            - "2"
+            - --ctx-size
+            - "8192"
+            - --metrics
+            - --slots
+            - --no-webui
+          ports:
+            - name: http
+              containerPort: 8080
+          # Contract 4 descriptor (infergate's
+          # internal/backend/llamacpp/llamacpp.backend-capability.json):
+          # /health is public, no API-key check.
+          startupProbe:
+            httpGet: { path: /health, port: 8080 }
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 30   # 60s worst-case model-load budget (1.1 GB q4_k_m gguf; observed load ~1s this session, generous margin for a slower disk/node)
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+            successThreshold: 1
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            # CPU-realistic request/limit — this build has no CUDA backend
+            # (libggml-cpu.so only; verified via `ldd`, no libggml-cuda.so
+            # in the build tree), so it never uses a GPU even if scheduled
+            # onto a node that has one. 2 slots x 4096 ctx tokens
+            # (max_concurrent_requests=2 per the Contract 4 descriptor)
+            # driving CPU decode is the resource-relevant fact, not GPU
+            # presence.
+            requests: { cpu: "2", memory: "2Gi" }
+            limits: { cpu: "4", memory: "3Gi" }
+          volumeMounts:
+            - name: model
+              mountPath: /models
+              readOnly: true
+      volumes:
+        - name: model
+          # Contract 5 `model_mount`: a real deployment pre-populates this
+          # PVC (e.g. an init container or job that downloads/verifies the
+          # pinned checkpoint by digest) rather than baking the 1.1 GB
+          # artifact into the image — see
+          # scripts/build-llamacpp-image.sh's header for the same rationale
+          # applied to the compose bind mount. Never bound in this
+          # environment (no StorageClass installed in the k3s validation
+          # run, same as deploy/postgres-dev/base's PVC — A-3,
+          # docs/implementation-notes.md).
+          persistentVolumeClaim:
+            claimName: llama-cpp-model

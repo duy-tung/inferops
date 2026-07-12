@@ -77,6 +77,23 @@ Critical path: **IO-T002 → IO-T003 → IO-T004 → IO-T005 → I5 → IO-T006 
 
 ## IO-T005 — GPU node profile + vLLM deployment (GPU gate G6)
 
+- **Status: DONE, CPU fallback (2026-07-12).** G6 stayed closed (no GPU rented). Executed the
+  documented fallback: a real llama.cpp engine (`compose/docker-compose.llamacpp.yml`, image
+  `infergate-llamacpp-engine:8f114a9@sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be`,
+  llama.cpp commit `8f114a9b573b69035299f9b924047f53c1e22c7e`, model
+  `qwen2.5-1.5b-instruct-q4_k_m.gguf` sha256 `6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e`)
+  wired behind a dedicated gateway instance (`gateway-llamacpp`, `-auth-mode=none -config=...`,
+  selecting the released image's real llamacpp adapter — see `docs/implementation-notes.md` for
+  why the main `-auth-mode=db` gateway cannot). Smoke: `scripts/llamacpp-smoke.sh`, **22/22
+  passed** (`scripts/evidence/llamacpp-smoke-20260712T002650Z/`) — real non-stream + streaming
+  completions, the llamacpp adapter's normalization contract verified directly, a real
+  client-disconnect cancellation observed at both the gateway and the engine, post-cancellation
+  liveness confirmed. GPU-node-profile shell (`deploy/llama-cpp/base/*`,
+  `clusters/gpu-node/*`) authored with real `nodeSelector`/`tolerations`/`nvidia.com/gpu`
+  scheduling metadata and validated against a live k3s API server
+  (`clusters/gpu-node/evidence/k3s-validation-20260712.txt`) — never scheduled (no GPU present).
+  Full detail, deviations, and the honest CUDA-backend limitation in
+  `docs/gpu-node-profile.md` and `docs/implementation-notes.md`.
 - **Goal/Repo:** reproducible GPU-node profile and a contract-conformant vLLM deployment. inferops.
 - **Requirement:** device plugin install, `nvidia.com/gpu` limits, node labels, driver/CUDA versions recorded into the node profile; vLLM deployed per deployment contract with model mount and secret strategy; readiness honest during real multi-minute warm-up. GPU session per program rules: written hypothesis + full config manifest + auto-stop script + budget alert; teardown script tested.
 - **Dependencies:** IO-T004; infergate vLLM evidence (IG-T014); GPU gate G6 open.

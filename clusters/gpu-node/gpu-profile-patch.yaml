@@ -1,0 +1,71 @@
+# GPU-node-profile SHELL (IO-T005, GPU gate G6) — the honest artifact this
+# task calls for: resources/labels/nodeSelector AS THEY WOULD BE for a real
+# rented GPU node (docs/architecture.md §2.2, docs/gpu-node-profile.md),
+# authored and schema/API-server validated (clusters/gpu-node/validate-k3s.sh)
+# but NEVER applied to a real cluster and NEVER scheduled this session — G6
+# is closed (no GPU rented; "the GPU path is deferred (no GPU)" per this
+# task's brief). The engine actually serving traffic this session is the
+# CPU llama.cpp compose service (compose/docker-compose.llamacpp.yml),
+# smoke-tested end-to-end (scripts/llamacpp-smoke.sh). Deviation extends
+# D-1 (docs/implementation-notes.md).
+#
+# Stated honestly, not glossed over: the llama-server BINARY this patch's
+# base Deployment (deploy/llama-cpp/base) runs was built WITHOUT a CUDA
+# backend (verified: `ldd build/bin/llama-server` lists only
+# libggml-cpu.so, no libggml-cuda.so/libggml-hip.so in the build tree) — so
+# even if this patched manifest were applied to a real GPU node, THIS
+# SPECIFIC IMAGE would not use the GPU. A real GPU session would need
+# either a CUDA-enabled llama.cpp rebuild (`-DGGML_CUDA=ON`) or vLLM (this
+# repo's originally-planned GPU engine, docs/architecture.md §2.3) — this
+# patch demonstrates the pod/node-level GPU-scheduling PATTERN (device
+# plugin resource request, node targeting, driver/CUDA recording — the
+# scope docs/architecture.md §7 assigns to inferops) independent of which
+# specific engine binary eventually runs on it.
+#
+# Kubernetes "Schedule GPUs" documentation conventions used below:
+# nodeSelector on the label the NVIDIA device plugin / GPU Feature
+# Discovery daemonset applies to GPU nodes; a matching toleration for the
+# node's GPU taint (both values are the common defaults documented
+# upstream, not verified against any real node this session — re-verify at
+# GPU-session start, per the program's volatile-fact-flagging rule,
+# docs/gpu-node-profile.md).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama-cpp
+spec:
+  template:
+    metadata:
+      labels:
+        # Lets a real GPU-session dashboard/query distinguish this profile
+        # from the CPU base without changing the Service selector (Service
+        # selects only on name/component; this is an extra, non-matched
+        # label).
+        inferops.dev/node-profile: gpu
+    spec:
+      nodeSelector:
+        # Example GPU-node-pool label — as of 2026-07, re-verify against
+        # the actual rented provider's node labels at GPU-session start
+        # (docs/gpu-node-profile.md). NVIDIA GPU Feature Discovery's own
+        # label (when installed) is more specific:
+        # nvidia.com/gpu.product=<model>; this generic pool label is the
+        # one this profile targets until a real node's labels are read.
+        inferops.dev/gpu-class: "l4-24gb"
+      tolerations:
+        # Common convention: GPU nodes are tainted so only GPU-requesting
+        # pods schedule there. Value/effect are the documented default,
+        # re-verified against the real node at session start.
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: llama-cpp
+          resources:
+            # nvidia.com/gpu is an extended resource: Kubernetes requires
+            # it in `limits`, and requests default to match limits when
+            # requests is omitted for an extended resource — this is the
+            # complete GPU declaration (Kubernetes "Schedule GPUs" doc).
+            # 24 GB-class single-GPU node per docs/architecture.md §2.2
+            # (RTX 4090 / L4 / A10 class).
+            requests: { cpu: "2", memory: "4Gi" }
+            limits: { cpu: "4", memory: "6Gi", "nvidia.com/gpu": "1" }

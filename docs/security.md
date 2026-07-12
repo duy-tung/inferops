@@ -18,8 +18,15 @@ Scope: operational security of the deployment stack. Application security (authn
 ## 3. Image provenance
 
 - Deploy **by digest only**. The digest recorded in a manifest must match the released artifact in the inference-lab pins file.
-- No `:latest` tags. No locally built component images. No component source checkouts (see `docs/scope.md`) — this is auditable across repo history and CI.
+- No `:latest` tags. No locally built component images (except the llama.cpp engine image, IO-T005 — it is not a portfolio component; see `docs/gpu-node-profile.md`). No component source checkouts (see `docs/scope.md`) — this is auditable across repo history and CI.
 - Digest bump procedure (IO-T010): new digest → smoke green → pins file advances. Rollback = previous digest, same procedure.
+- **Reproducibility finding (IO-T005):** `docker build`'s default provenance-attestation output
+  makes the resulting digest **non-deterministic** across rebuilds of byte-identical inputs (the
+  attestation manifest embeds build-time metadata) — discovered when two back-to-back builds of
+  the llama-cpp engine image from the same context produced two different digests. Fixed with
+  `--provenance=false` (verified: three separate rebuilds then produced the identical digest);
+  `scripts/build-llamacpp-image.sh` always passes this flag. Recorded as a general lesson for
+  digest-pinning any locally built image, not specific to this one component.
 
 ## 4. Network exposure
 

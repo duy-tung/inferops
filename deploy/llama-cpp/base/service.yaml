@@ -1,0 +1,19 @@
+# ClusterIP only (docs/security.md §4): the engine is never reachable
+# outside the cluster; the gateway (infergate-gateway-llamacpp equivalent)
+# is the only client, addressed via this Service's DNS name.
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama-cpp
+  labels:
+    app.kubernetes.io/name: llama-cpp
+    app.kubernetes.io/component: engine
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: llama-cpp
+    app.kubernetes.io/component: engine
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

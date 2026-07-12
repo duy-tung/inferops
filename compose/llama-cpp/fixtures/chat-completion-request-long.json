@@ -1,0 +1,12 @@
+{
+  "model": "qwen2.5-1.5b-instruct",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a long, detailed story about a dragon who learns to bake bread. At least 500 words."
+    }
+  ],
+  "max_completion_tokens": 400,
+  "temperature": 0.7,
+  "stream": true
+}

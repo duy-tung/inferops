@@ -1,0 +1,132 @@
+####################################################################
+# inferops — llama.cpp engine overlay (IO-T005, GPU gate G6 CPU fallback;
+# extends D-1's compose-pivot deviation, docs/implementation-notes.md).
+#
+# Real inference engine wired behind a DEDICATED infergate gateway instance
+# using the released image's file-backed config path (`-config`, ADR-0002)
+# to select the llama.cpp-specific adapter
+# (`"backend":{"type":"llamacpp"}` -> internal/config/store.go
+# `buildBackend` -> internal/backend/llamacpp.New). This is deliberately a
+# separate gateway instance from `gateway` in docker-compose.yml: that one
+# runs `-auth-mode=db` with the legacy `-backend-name`/`-backend-url` flags,
+# which ALWAYS construct the generic OpenAI-HTTP adapter regardless of
+# `-backend-name`'s value (cmd/gateway/main.go: `backend.NewOpenAIHTTP(...)`
+# unconditionally) — so it cannot select the llamacpp-specific adapter, and
+# `-config` is documented as "ignored under -auth-mode=db" so it cannot
+# reach this path either. Only `-auth-mode=none -config=<file>` selects
+# `type":"llamacpp"`. Recorded as a finding, not a workaround:
+# docs/implementation-notes.md's IO-T005 entry.
+#
+# This same `-config` file is also exactly ADR-0002's reloadable-snapshot
+# mechanism (SIGHUP / POST /admin/v1/config/reload) — IO-T010's
+# config-rollout procedure (fault scenario 8) reuses this same gateway
+# instance and file for that reason, rather than standing up a third
+# gateway just to exercise reload.
+#
+# Not pod-scheduled in this environment (RQ-14 compose-pivot): the
+# GPU-node-profile shell Deployment for this same engine
+# (clusters/gpu-node/deployment.yaml) is authored and validated against a
+# live k3s API server but never scheduled (no GPU in this sandbox). This
+# compose service is the CPU-fallback engine actually serving traffic,
+# smoke-tested end-to-end (scripts/llamacpp-smoke.sh).
+#
+# Usage (same combining convention as docker-compose.lifecycle.yml — this
+# overlay has no top-level `networks:` of its own, so it must be combined
+# with the base file that declares inferops-net):
+#   export COMPOSE_FILE="docker-compose.yml:docker-compose.llamacpp.yml"
+#   docker compose --profile llamacpp up -d llama-cpp gateway-llamacpp
+# -auth-mode=none needs no DB/pepper secrets (those are the `gateway`
+# service's -auth-mode=db concern only), so this instance mounts nothing
+# from compose/secrets/.
+####################################################################
+
+services:
+  llama-cpp:
+    # docs/implementation-notes.md IO-T005 entry: image digest, llama.cpp
+    # commit (8f114a9b573b69035299f9b924047f53c1e22c7e), model sha256.
+    image: infergate-llamacpp-engine@sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be
+    container_name: inferops-llama-cpp
+    profiles: ["llamacpp"]
+    restart: unless-stopped
+    # Reference config mirrors infergate's own IG-T005 probe
+    # (internal/backend/llamacpp/llamacpp.backend-capability.json
+    # "provenance.notes": "-np 2 -c 8192 --metrics --slots") against a real
+    # quantized checkpoint instead of that probe's tiny random-weight
+    # fixture — context_limit_tokens=4096/slot (8192 ctx / 2 slots),
+    # max_concurrent_requests=2, matching the shipped Contract 4 descriptor
+    # this compose service is deliberately kept consistent with.
+    # llama-server's flag parser requires space-separated values (verified:
+    # `--host=0.0.0.0` errors "invalid argument"; `--host 0.0.0.0` works) —
+    # not the `--flag=value` style infergate's own flags accept.
+    command:
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8080"
+      - --model
+      - /models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+      - --parallel
+      - "2"
+      - --ctx-size
+      - "8192"
+      - --metrics
+      - --slots
+      - --no-webui
+    volumes:
+      # Contract 5 `model_mount`: real deployment mounts the model artifact
+      # read-only rather than baking it into the image (1.1 GB — see
+      # scripts/build-llamacpp-image.sh's header for why the image bakes
+      # only the binary+libs). World-readable on the host (0644) so the
+      # image's non-root uid 10001 can read it through the bind mount —
+      # same rationale as docker-compose.yml's secret bind mounts.
+      - /home/user/tools/models/qwen2.5-1.5b-instruct-q4_k_m.gguf:/models/qwen2.5-1.5b-instruct-q4_k_m.gguf:ro
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8080/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 30s
+    # No published host port: reached only via inferops-net, matching
+    # docs/security.md §4 ("only the public inference API is exposed").
+    networks:
+      - inferops-net
+
+  gateway-llamacpp:
+    image: infergate@sha256:1971426b393b3e00b30cac0690d38b31667b5e34ebbeb6e111a54c369fb54c7e
+    container_name: inferops-gateway-llamacpp
+    profiles: ["llamacpp"]
+    restart: unless-stopped
+    depends_on:
+      llama-cpp:
+        condition: service_healthy
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    volumes:
+      # Config-file bind mount: compose's analog of a Kubernetes ConfigMap
+      # volume (deploy/infergate/base/kustomization.yaml's
+      # configMapGenerator groundwork is the k8s-side equivalent). Editing
+      # this host file changes what the next Reload() (SIGHUP / admin
+      # endpoint) publishes — see scripts/config-rollout.sh (IO-T010).
+      - ./llama-cpp/gateway-config.json:/etc/infergate/gateway-config.json:ro
+    command:
+      - -addr=:8080
+      - -admin-addr=:8090
+      - -auth-mode=none
+      - -config=/etc/infergate/gateway-config.json
+      - -drain-timeout=65s
+      - -trace-exporter=otlp
+    ports:
+      # Public inference API only, for the IO-T005 smoke client and manual
+      # exercise. Admin (8090, config-reload trigger) and /metrics stay
+      # unpublished — reachable only inside inferops-net (docs/security.md
+      # §4), same posture as the `gateway` service in docker-compose.yml.
+      - "8082:8080"
+    # graceful_termination arithmetic, this backend: upstream_timeout=60s
+    # (gateway-config.json) is the max_stream_duration_seconds analog for
+    # real (slower-than-mock) CPU inference; stop_grace_period=90s > 60s
+    # preserves the same ~30s margin docs/testing.md records for the mock
+    # path (50s > 30s).
+    stop_signal: SIGTERM
+    stop_grace_period: 90s
+    networks:
+      - inferops-net

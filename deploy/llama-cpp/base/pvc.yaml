@@ -1,0 +1,19 @@
+# Model artifact volume (Contract 5 `model_mount`). Dev/session-scale size
+# request sized to the pinned checkpoint (qwen2.5-1.5b-instruct-q4_k_m.gguf,
+# sha256 recorded in docs/implementation-notes.md, ~1.07 GiB) plus headroom.
+# Same "no StorageClass installed in the k3s validation run" evidence gap as
+# deploy/postgres-dev/base's PVC (A-3, docs/implementation-notes.md) —
+# expected and harmless: no pod ever schedules to mount it in this
+# environment.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llama-cpp-model
+  labels:
+    app.kubernetes.io/name: llama-cpp
+    app.kubernetes.io/component: engine
+spec:
+  accessModes: ["ReadOnlyMany"]
+  resources:
+    requests:
+      storage: 4Gi

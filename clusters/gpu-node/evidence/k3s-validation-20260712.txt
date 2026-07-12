@@ -1,0 +1,127 @@
+== starting k3s (server-only, --disable-agent: no kubelet, no pod scheduling) ==
+k3s server starting (pid 26837), waiting for API to come up...
+
+== kubectl get --raw /healthz ==
+Error from server (ServiceUnavailable): starting
+
+== kustomize build clusters/gpu-node (schema/render check; confirms the
+   GPU-profile patch actually applied — nodeSelector/tolerations/nvidia.com/gpu) ==
+rendered 4 objects, 0 build errors
+-- confirming GPU-profile fields are present in the rendered output --
+      nodeSelector:
+        inferops.dev/gpu-class: l4-24gb
+      terminationGracePeriodSeconds: 90
+      tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Exists
+            nvidia.com/gpu: "1"
+        key: nvidia.com/gpu
+
+== kubectl apply -k clusters/gpu-node (real apply to etcd) ==
+namespace/inferops-gpu-node created
+service/llama-cpp created
+persistentvolumeclaim/llama-cpp-model created
+deployment.apps/llama-cpp created
+
+== kubectl apply --dry-run=server -k clusters/gpu-node (re-run: server-side admission + schema re-validation) ==
+namespace/inferops-gpu-node unchanged (server dry run)
+service/llama-cpp unchanged (server dry run)
+persistentvolumeclaim/llama-cpp-model unchanged (server dry run)
+deployment.apps/llama-cpp unchanged (server dry run)
+
+== kubectl get all -n inferops-gpu-node -o wide (expect the Pod Pending — zero Nodes registered, so the nvidia.com/gpu request/nodeSelector/toleration are never actually evaluated by a scheduler decision) ==
+NAME                             READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+pod/llama-cpp-68cbd7c78f-ll49p   0/1     Pending   0          9s    <none>   <none>   <none>           <none>
+
+NAME                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+service/llama-cpp   ClusterIP   10.43.111.195   <none>        8080/TCP   9s    app.kubernetes.io/component=engine,app.kubernetes.io/name=llama-cpp
+
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                                                      SELECTOR
+deployment.apps/llama-cpp   0/1     1            0           9s    llama-cpp    infergate-llamacpp-engine:8f114a9@sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be   app.kubernetes.io/component=engine,app.kubernetes.io/name=llama-cpp
+
+NAME                                   DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES                                                                                                      SELECTOR
+replicaset.apps/llama-cpp-68cbd7c78f   1         1         0       9s    llama-cpp    infergate-llamacpp-engine:8f114a9@sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be   app.kubernetes.io/component=engine,app.kubernetes.io/name=llama-cpp,pod-template-hash=68cbd7c78f
+
+-- explicit ReplicaSet/Pod listing (some kubectl versions omit these from 'get all' immediately after apply) --
+NAME                                   DESIRED   CURRENT   READY   AGE   CONTAINERS   IMAGES                                                                                                      SELECTOR
+replicaset.apps/llama-cpp-68cbd7c78f   1         1         0       9s    llama-cpp    infergate-llamacpp-engine:8f114a9@sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be   app.kubernetes.io/component=engine,app.kubernetes.io/name=llama-cpp,pod-template-hash=68cbd7c78f
+
+NAME                             READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+pod/llama-cpp-68cbd7c78f-ll49p   0/1     Pending   0          9s    <none>   <none>   <none>           <none>
+
+== kubectl get nodes (expect none — --disable-agent; proves no scheduling, GPU or otherwise, occurred) ==
+No resources found
+
+== kubectl describe pod -n inferops-gpu-node (confirms the pod spec carries nodeSelector/tolerations/resources as authored) ==
+Name:             llama-cpp-68cbd7c78f-ll49p
+Namespace:        inferops-gpu-node
+Priority:         0
+Service Account:  default
+Node:             <none>
+Labels:           app.kubernetes.io/component=engine
+                  app.kubernetes.io/name=llama-cpp
+                  inferops.dev/node-profile=gpu
+                  pod-template-hash=68cbd7c78f
+Annotations:      <none>
+Status:           Pending
+IP:               
+IPs:              <none>
+Controlled By:    ReplicaSet/llama-cpp-68cbd7c78f
+Containers:
+  llama-cpp:
+    Image:      infergate-llamacpp-engine:8f114a9@sha256:43af71918dda78a1daaf19849e1c3cccfd7bad7c432b6c1420a45a62e99410be
+    Port:       8080/TCP (http)
+    Host Port:  0/TCP (http)
+    Args:
+      --host
+      0.0.0.0
+      --port
+      8080
+      --model
+      /models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+      --parallel
+      2
+      --ctx-size
+      8192
+      --metrics
+      --slots
+      --no-webui
+    Limits:
+      cpu:             4
+      memory:          6Gi
+      nvidia.com/gpu:  1
+    Requests:
+      cpu:             2
+      memory:          4Gi
+      nvidia.com/gpu:  1
+    Liveness:          http-get http://:8080/health delay=10s timeout=2s period=10s #success=1 #failure=3
+    Readiness:         http-get http://:8080/health delay=0s timeout=2s period=5s #success=1 #failure=2
+    Startup:           http-get http://:8080/health delay=0s timeout=2s period=2s #success=1 #failure=30
+    Environment:       <none>
+    Mounts:
+      /models from model (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-pgc7z (ro)
+Volumes:
+  model:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  llama-cpp-model
+    ReadOnly:   false
+  kube-api-access-pgc7z:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              inferops.dev/gpu-class=l4-24gb
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+                             nvidia.com/gpu:NoSchedule op=Exists
+Events:                      <none>
+
+== kubectl get events -n inferops-gpu-node --sort-by=.lastTimestamp ==
+LAST SEEN   TYPE     REASON              OBJECT                                  MESSAGE
+9s          Normal   SuccessfulCreate    replicaset/llama-cpp-68cbd7c78f         Created pod: llama-cpp-68cbd7c78f-ll49p
+9s          Normal   ScalingReplicaSet   deployment/llama-cpp                    Scaled up replica set llama-cpp-68cbd7c78f to 1
+1s          Normal   FailedBinding       persistentvolumeclaim/llama-cpp-model   no persistent volumes available for this claim and no storage class is set

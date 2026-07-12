@@ -86,6 +86,17 @@ No relabel_configs were added in `compose/prometheus/prometheus.yml` beyond the 
 
 Engine metrics endpoints and metric-name mappings come from backend-capability descriptors. vLLM waiting/KV-usage gauge names vary by version — **mapped via the descriptor, never hardcoded** (as of 2026-07 — re-verify via `curl /metrics` at session start). Scrape configs are generated/parameterized per descriptor, so an engine version bump is a descriptor + pin change, not a config hunt.
 
+**IO-T005 extension (2026-07-12):** added `infergate-gateway-llamacpp` and `llama-cpp-engine`
+scrape jobs (`compose/prometheus/prometheus.yml`) for the real llama.cpp path. Verified live:
+`inference_backend_healthy{backend="llamacpp",job="infergate-gateway-llamacpp"} 1` queryable
+through Prometheus after `scripts/llamacpp-smoke.sh`. The llama-cpp engine's own `/metrics`
+(Contract 4: `llamacpp:requests_processing`/`_deferred`/etc., per
+`internal/backend/llamacpp/llamacpp.backend-capability.json`'s `name_mapping`) is scraped directly
+but not yet mapped into a dashboard panel — the golden dashboard's existing `backend`-labeled
+panels (§3) already render `backend="llamacpp"` series with no dashboard change needed; a
+dedicated engine-internal panel is left for a future observability task, not required by IO-T005's
+stop condition (real inference through the stack, smoke-verified).
+
 ## 7. Alert sketches (documented, not paged)
 
 | Alert | Expression sketch | Rationale |

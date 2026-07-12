@@ -1,0 +1,32 @@
+== Scenario 12 — rolling update with active requests — 2026-07-12T01:57:49+00:00 ==
+(see also: scripts/evidence/rolling-update-20260711T234628Z/ for the IO-T004 curl-based proof)
+
+-- starting fleet: mock-faults + gateway-faults-a/-b + haproxy-faults --
+fleet ready
+
+-- launching background inferbench streaming population against the LB (rate=4) for the whole roll --
+
+-- rolling: draining gateway-faults-a (SIGTERM) --
+inferops-gateway-faults-a
+gateway-faults-a drained+exited in 1s
+-- starting replacement gateway-faults-a (same released digest) --
+gateway-faults-a ready again
+
+-- rolling: draining gateway-faults-b (SIGTERM) --
+inferops-gateway-faults-b
+gateway-faults-b drained+exited in 0s
+-- starting replacement gateway-faults-b (same released digest) --
+gateway-faults-b ready again
+
+-- waiting for the background inferbench population to finish --
+inferbench exit code: 0
+
+-- inferbench summary --
+summary sent=60 ok=60 errors=0 shed=0 canceled=0 cancel_planned=0 slow_planned=0 max_dispatch_slip=1.15706ms max_send_slip=1.6218ms usage_missing=0 wall=18.626s
+
+-- error/status breakdown --
+('ok', None) 60
+
+-- tearing down the fleet --
+
+Evidence directory: /home/user/inferops/faults/scenario-12/evidence/20260712T015749Z

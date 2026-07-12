@@ -1,0 +1,51 @@
+== inferops IO-T010 config-rollout-under-traffic test — 2026-07-12T01:51:27+00:00 ==
+-- ensuring llama-cpp + gateway-llamacpp are up --
+time="2026-07-12T01:51:28Z" level=warning msg="Found orphan containers ([inferops-haproxy inferops-gateway-a inferops-gateway-b inferops-grafana inferops-otel-collector inferops-prometheus inferops-tempo]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container inferops-llama-cpp Running 
+ Container inferops-gateway-llamacpp Running 
+ Container inferops-llama-cpp Waiting 
+ Container inferops-llama-cpp Healthy 
+gateway-llamacpp /readyz: 200
+
+-- starting background load: short completions (~every 400ms) + streams (~every 3s), model=qwen2.5-1.5b-instruct --
+background load running (short pid=3399, stream pid=3400); baseline established
+
+-- BEFORE: current config_version (from gateway logs) --
+  config_version=v5-00dda759
+
+-- ROLLOUT: writing new config (adds model alias qwen2.5-1.5b-instruct-v2) --
+{
+  "backend": {
+    "name": "llamacpp",
+    "type": "llamacpp",
+    "url": "http://llama-cpp:8080"
+  },
+  "models": [
+    "qwen2.5-1.5b-instruct",
+    "qwen2.5-1.5b-instruct-v2"
+  ],
+  "owned_by": "inferops",
+  "upstream_timeout": "60s",
+  "stream_write_timeout": "60s"
+}
+-- triggering reload via the admin endpoint (in-cluster only, docs/security.md §4) --
+  admin response: {"config_version":"v6-9412dd42","trigger_to_publish":"148.591µs"}
+  new config_version: v6-9412dd42
+
+-- verifying the new snapshot is actually live --
+PASS  new model alias qwen2.5-1.5b-instruct-v2 appears in /v1/models
+  request against the NEW alias: HTTP 200
+
+-- ROLLBACK: restoring original config (removes the v2 alias) --
+  admin response: {"config_version":"v7-00dda759","trigger_to_publish":"433.255µs"}
+  rolled-back config_version: v7-00dda759
+PASS  v2 alias absent after rollback (original state restored)
+
+-- stopping background load --
+
+== RESULTS ==
+short requests:  23 total, 0 failed/dropped
+stream requests: 4 total, 0 failed/dropped (non-200 or missing [DONE])
+config_version: before=config_version=v5-00dda759 -> after-rollout=v6-9412dd42 -> after-rollback=v7-00dda759
+Evidence directory: /home/user/inferops/scripts/evidence/config-rollout-20260712T015127Z
+VERDICT: PASS — zero dropped streams across both the rollout and the rollback

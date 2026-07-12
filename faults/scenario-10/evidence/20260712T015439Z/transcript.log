@@ -1,0 +1,96 @@
+== Scenario 10 — one unhealthy backend — 2026-07-12T01:54:39+00:00 ==
+-- starting mock-faults + gateway-faults (default health-poll/breaker config) --
+-- BEFORE: inference_backend_healthy --
+inference_backend_healthy{backend="mock-faults"} 1
+
+-- sending a probe request every ~150ms for ~9s (each in its own background job), pausing mock-faults at t=1.5s --
+-- t+1.5s: docker pause inferops-mock-faults (at 2026-07-12T01:54:41+00:00) --
+inferops-mock-faults
+-- t+2.3s: inference_backend_healthy after the pause --
+inference_backend_healthy{backend="mock-faults"} 0
+
+-- t+4.5s: docker unpause inferops-mock-faults (at 2026-07-12T01:54:45+00:00) --
+inferops-mock-faults
+
+-- AFTER: inference_backend_healthy (expect back to 1) --
+inference_backend_healthy{backend="mock-faults"} 1
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 39
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="4xx",error_class="canceled"} 3
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="overloaded"} 18
+inference_retries_total{stage="pre_first_token"} 0
+inference_sheds_total{reason="backend_unavailable"} 18
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 0
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+-- probe timeline (t_ms, http_code, wall_ms) --
+t_ms,http_code,wall_ms
+8,200,121
+160,200,120
+312,200,121
+464,200,120
+616,200,120
+768,200,122
+920,200,120
+1072,200,121
+1224,200,121
+1376,200,120
+1984,503,12
+2137,503,11
+2289,503,11
+2441,503,11
+2594,503,11
+1528,000,1213
+2746,503,10
+1680,000,1211
+2898,503,11
+1832,000,1210
+3050,503,11
+3202,503,11
+3354,503,11
+3507,503,13
+3659,503,11
+3811,503,11
+3963,503,11
+4115,503,11
+4267,503,11
+4420,503,12
+4572,503,11
+4726,200,122
+4879,200,121
+5030,200,121
+5182,200,120
+5334,200,121
+5486,200,120
+5638,200,121
+5790,200,120
+5943,200,120
+6094,200,120
+6246,200,120
+6398,200,121
+6550,200,120
+6702,200,120
+6854,200,121
+7006,200,120
+7158,200,120
+7310,200,120
+7462,200,120
+7614,200,120
+7767,200,122
+7919,200,120
+8071,200,120
+8223,200,120
+8375,200,120
+8527,200,120
+8679,200,122
+8831,200,120
+8983,200,121
+
+-- summary: response codes before pause (t<1500ms), during pause (1500-4500ms), after unpause (t>4500ms) --
+before {'200': 10}
+during {'503': 17, '000': 3}
+after {'503': 1, '200': 29}
+
+-- tearing down --
+
+Evidence directory: /home/user/inferops/faults/scenario-10/evidence/20260712T015439Z

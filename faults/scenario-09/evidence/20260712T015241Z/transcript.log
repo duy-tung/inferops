@@ -1,0 +1,33 @@
+== Scenario 09 — usage database failure — 2026-07-12T01:52:41+00:00 ==
+BEFORE: usage_ledger row count = 123
+
+-- steady baseline traffic (10 requests) before the outage --
+
+-- docker stop inferops-postgres-dev (the outage) --
+inferops-postgres-dev
+stopped at 2026-07-12T01:52:43+00:00
+
+-- traffic DURING the outage (15 requests) --
+
+-- usage_ledger row count during the outage (DB is down; expect this query to fail -- that's expected, it proves the DB is really down, not that the gateway depends on it) --
+DURING: usage_ledger row count query result = DB_UNREACHABLE (expected)
+
+-- docker start inferops-postgres-dev (restore) --
+inferops-postgres-dev
+restored at 2026-07-12T01:52:46+00:00
+
+-- traffic AFTER recovery (10 requests) --
+
+-- waiting up to 30s for the usage backlog to drain --
+  t+1s: usage_ledger row count = 158
+
+-- duplicate-settlement idempotency spot check (any request_id settled more than once?) --
+duplicate request_id rows found: 0 (0 expected)
+
+-- client-side latency/error summary by phase --
+before n= 10 codes= {'200': 10} wall min/median/max= 0.12 0.121 0.121
+during n= 15 codes= {'200': 15} wall min/median/max= 0.12 0.121 0.121
+after n= 10 codes= {'200': 10} wall min/median/max= 0.12 0.121 0.123
+
+BEFORE_COUNT=123 AFTER_COUNT=158
+Evidence directory: /home/user/inferops/faults/scenario-09/evidence/20260712T015241Z

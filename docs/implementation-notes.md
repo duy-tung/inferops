@@ -6,6 +6,77 @@ Running log of notable events: surprises, ecosystem drift, fallbacks taken, cont
 
 ## Running log
 
+### 2026-07-12 — IO-T006/T007 executed (12-scenario fault campaign, I7)
+
+- **All 12 Contract 6 fault scenarios injected and adjudicated** against the running compose
+  stack (mock-backend path for scenarios 1-4/6/7/9/10, the llama.cpp path's `gateway-llamacpp`
+  cited for scenario 8, 2-replica ad hoc fleets for scenarios 5/12). Full detail per scenario:
+  `faults/scenario-{01..12}/{hypothesis,checklist,verdict}.md` + re-runnable `inject.sh`; the
+  12-row summary is `faults/campaign-matrix.md`. Kill-criteria set (1, 2, 5, 6, 11, 12) all ran in
+  full; no scope reduction was triggered.
+- **New shared infrastructure** (`faults/lib.sh`): ad hoc, released-digest gateway/mock-backend
+  instances (`gateway-faults`, `mock-faults`, and a 2-replica `gateway-faults-a/-b` +
+  `haproxy-faults` fleet for drain/rolling-update scenarios) — all `-auth-mode=none`, because
+  `inferbench` (checked in its own source, `internal/client/client.go`) sends no `Authorization`
+  header and can only drive an unauthenticated instance; the main `-auth-mode=db` `gateway` +
+  `postgres-dev` pair was reserved for scenario 9 (the only scenario needing the DB-backed usage
+  ledger). `inferbench` itself was built fresh from `/home/user/inferbench` @ commit
+  `62c2704997e6c8a2966307ee3d8dbfd16747b631` (2026-07-11) — no tagged/released inferbench artifact
+  exists yet upstream, recorded honestly as a build-from-commit rather than a by-digest consumption
+  (the closest available match to the released-artifacts rule for a tool with no release process
+  yet).
+- **9/12 verdicts: expected-semantics-matched** (scenarios 2, 5, 6, 7, 8, 9, 11, 12 cleanly;
+  scenarios 1, 3, 10 matched with a documented, non-defect, upstream-acknowledged deviation — see
+  below). **1/12 verdict: deviation-documented** — scenario 4 (slow client). Two scenarios (8, 9,
+  11, 12) also **cite and re-confirm** existing IO-T004/IO-T010 evidence rather than being redone
+  from scratch, per the task brief, with fresh dated re-runs of the same scripts plus (for 5, 12)
+  an added inferbench-driven measurement the original curl-based scripts didn't produce.
+- **The one real finding (scenario 4, slow client):** a genuinely stalled raw-TCP client (zero
+  reads, shrunk receive window) held a stream open through an **8-second stall — 2.6x the
+  configured 3-second `-stream-write-timeout`** — with the gateway never closing it; the stream
+  simply resumed once reads resumed and completed normally. This matches, rather than contradicts,
+  what infergate's own source already says: `internal/stream/relay.go`'s header comment states
+  "Full slow-client fault handling — scenario 4 — is later work; the bound exists now." Recorded
+  as an **observation for infergate** (`faults/scenario-04/verdict.md`, `faults/campaign-matrix.md`
+  "Observations filed against infergate"), not silently tuned away and not treated as a surprise —
+  the campaign's job was to verify deployed behavior against the contract regardless of what the
+  source already discloses, and the deployed behavior does not yet meet fs-04's full semantics.
+- **Structural, non-defect deviation (scenarios 1, 3, 7, 10):** this release's gateway CLI wires
+  exactly one backend into `internal/route.Router` — `cmd/gateway/main.go:145-152` says so
+  directly ("IG-T012 routing... not yet flag-driven for N>1... a recorded scope reduction"). No
+  second backend was stood up to work around this (per the task's own guidance, "else document the
+  reduced form") because doing so would not actually let the released gateway binary route between
+  them — the CLI/config surface for N>1 backends does not exist yet, regardless of how many
+  backend containers this repo runs. Each affected scenario's `verdict.md` states precisely which
+  clause could and couldn't be demonstrated as a result.
+- **A second, smaller instrumentation nuance (scenario 1):** `inference_retries_total` does not
+  increment when a retry's own `Select()` call also fails (e.g. the health poller flipped between
+  the first attempt and the retry) — traced to `internal/reliability/retry.go`'s `Do()`, which
+  returns the earlier error via the `lastErr != nil` branch without reaching the `tries>0`
+  metrics-increment code. Confirmed as a real, reproducible (not flaky) behavior via a
+  complementary transient-failure run that DID move the counter (0.5 error-rate,
+  `/healthz`-independent) — recorded as a doc-comment-worthy nuance for infergate, not a functional
+  defect (there is nothing useful to retry onto once `Select` itself fails).
+- **Client-impact numbers (inferbench, the five mandated scenarios):** scenario 1 — 39/60 ok
+  (hard-kill run), 8/60 ok (transient-failure run); scenario 2 — 51/60 ok, 5/60 clean typed
+  mid-stream errors; scenario 5 — 60/60 ok, 0 errors; scenario 6 — 3/399 admitted at baseline
+  latency, 392/399 cleanly shed; scenario 12 — 60/60 ok, 0 errors across a full 2-replica rolling
+  update. Full per-event breakdowns in each scenario's `verdict.md`.
+- Evidence pattern follows the existing house style (`faults/scenario-NN/evidence/<timestamp>/`,
+  transcripts + raw metrics dumps + inferbench run directories), consistent with
+  `scripts/evidence/*` elsewhere in this repo.
+- **Noisy-neighbor observation run** (`faults/noisy-neighbor/`, IO-T007 extra, not one of the 12
+  numbered scenarios): a second tenant (`tenant-b-gold`, tier `gold`) created via the main
+  gateway's own admin API against the shared `postgres-dev` registry; tenant A (existing
+  `smoke-tenant`, tier `default`) fired 200 concurrent requests against tenant B's steady
+  10-request trickle. Tenant B stayed at baseline latency (p50 122ms/p95 126ms) while tenant A
+  absorbed the queueing delay (p50 726ms/p95 1.32s) — real tier isolation observed at the ops
+  level via `internal/admission/fairness.go`'s priority+WRR+aging dispatch, not tuned. One
+  labeling quirk noted: `inference_queue_wait_seconds{tenant_tier=...}` recorded tenant B's
+  requests under `tenant_tier="unknown"` rather than `"gold"` (count matched exactly, 10) —
+  likely the Contract 2 cardinality policy restricting the tier label to a small enumerated set;
+  did not affect the admission/dispatch behavior itself, only the metric's label value.
+
 ### 2026-07-12 — IO-T010 executed
 
 - **Config rollout (fault scenario 8, in-cluster-analog):** exercised against
@@ -322,7 +393,26 @@ Running log of notable events: surprises, ecosystem drift, fallbacks taken, cont
 
 ## Contract defects filed
 
-*(none yet — see the `cmd/migrate` observation under IO-T002's log entry above: recorded as a candidate improvement, not filed as a blocking defect, since the conservative reversible workaround was sufficient)*
+*(no contract-schema defects filed — see the `cmd/migrate` observation under IO-T002's log entry
+above: recorded as a candidate improvement, not filed as a blocking defect, since the conservative
+reversible workaround was sufficient)*
+
+**Gateway-implementation observations filed against infergate** (IO-T006/T007 fault campaign,
+2026-07-12 — not contract-schema defects, but real, reproducible gaps between the deployed
+gateway's behavior and Contract 6's expected semantics; see `faults/campaign-matrix.md`
+"Observations filed against infergate" for full detail):
+
+1. Scenario 4 (slow client): `-stream-write-timeout` did not close a genuinely stalled stream
+   across an 8s stall (2.6x the configured deadline) — corroborates infergate's own
+   `internal/stream/relay.go` comment marking full slow-client handling as "later work."
+2. Scenario 1 (backend killed pre-first-token): `inference_retries_total` does not increment when
+   a retry's own `Select()` call also fails — a metrics-instrumentation nuance in
+   `internal/reliability/retry.go`, not a functional defect.
+3. IG-T012 (N-backend routing) has no CLI/config exposure in the released gateway binary yet
+   (`cmd/gateway/main.go:145-152`), blocking a fully faithful reproduction of the multi-backend
+   routing-shift clauses in fs-01/03/07/10 from any consumer repo. Already self-recorded by
+   infergate as a scope reduction; surfaced here as a concrete consumer that would benefit from it
+   landing.
 
 ## Deviations
 

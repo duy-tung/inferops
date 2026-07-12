@@ -1,0 +1,1 @@
+{"id":"chatcmpl-17cc4c8963d7570f97772fc9","object":"chat.completion","created":1783641600,"model":"mock-8b","choices":[{"index":0,"message":{"role":"assistant","content":"prairie nimbus basalt orchard drift upland knoll quartz prairie lumen summit cinder"},"finish_reason":"stop"}],"usage":{"prompt_tokens":21,"completion_tokens":12,"total_tokens":33}}

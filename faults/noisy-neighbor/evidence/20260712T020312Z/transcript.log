@@ -1,0 +1,22 @@
+== Noisy-neighbor observation run — 2026-07-12T02:03:12+00:00 ==
+-- launching tenant A: 200 concurrent requests (default tier, low priority, > global-inflight-budget=128) --
+-- tenant B: 10 sequential requests (gold tier, high priority) throughout the same window --
+-- waiting for tenant A's flood to finish --
+
+-- results --
+tenant A (default, 200 concurrent, the noisy one): n=200 codes={'200': 200} wall p50=0.726s p95=1.317s max=1.500s
+tenant B (gold, 10 sequential trickle): n=10 codes={'200': 10} wall p50=0.122s p95=0.126s max=0.326s
+
+-- gateway per-tier queue metrics (Contract 2 tenant_tier label) --
+inference_queue_depth{tenant_tier="default"} 0
+inference_queue_depth{tenant_tier="unknown"} 0
+inference_queue_wait_seconds_sum{tenant_tier="default"} 0.004169424
+inference_queue_wait_seconds_count{tenant_tier="default"} 247
+inference_queue_wait_seconds_sum{tenant_tier="unknown"} 9.7477e-05
+inference_queue_wait_seconds_count{tenant_tier="unknown"} 10
+inference_sheds_total{reason="backend_unavailable"} 3
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 0
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+Evidence directory: /home/user/inferops/faults/noisy-neighbor/evidence/20260712T020312Z

@@ -1,0 +1,32 @@
+== Scenario 07 — retry storm — 2026-07-12T01:48:04+00:00 ==
+-- starting mock-faults (-error-rate=0.3) + gateway-faults (admission tightened, default retry budget) --
+BEFORE retries_total: inference_retries_total{stage="pre_first_token"} 0
+
+-- launching 10 aggressive no-backoff client workers for 15s --
+-- worker totals (n,ok,nonok) --
+127,127,0
+126,126,0
+126,126,0
+126,126,0
+126,126,0
+126,126,0
+126,126,0
+126,126,0
+126,126,0
+126,126,0
+TOTAL: requests_issued=1261 ok=1261 non_ok=0
+
+-- gateway-faults /metrics after the storm --
+inference_backend_healthy{backend="mock-faults"} 1
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 1261
+inference_retries_total{stage="pre_first_token"} 0
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 0
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+-- amplification check: retries_total=0 vs total dispatched/classified requests=1261 (retry-budget-ratio default = 0.1) --
+
+-- tearing down --
+
+Evidence directory: /home/user/inferops/faults/scenario-07/evidence/20260712T014804Z

@@ -1,0 +1,46 @@
+== Scenario 07 — retry storm — 2026-07-12T01:49:39+00:00 ==
+-- starting mock-faults (-error-rate=0.3) + gateway-faults (admission tightened, default retry budget) --
+BEFORE retries_total: inference_retries_total{stage="pre_first_token"} 0
+
+-- launching 10 aggressive no-backoff client workers for 15s --
+-- worker totals (n,ok,nonok) --
+181,116,65
+182,135,47
+162,119,43
+181,130,51
+163,126,37
+176,121,55
+179,130,49
+184,118,66
+180,115,65
+174,126,48
+TOTAL: requests_issued=1762 ok=1236 non_ok=526
+
+-- gateway-faults /metrics after the storm --
+inference_backend_healthy{backend="mock-faults"} 1
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 1236
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="upstream_error"} 526
+inference_retries_total{stage="pre_first_token"} 175
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 0
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+-- amplification check: retries_total=175 vs total dispatched/classified requests=1762 (retry-budget-ratio default = 0.1) --
+
+== Part 2: tighter admission budget, to also exercise clause 2 (excess client-retry load shed, not forwarded) ==
+Part 2 TOTAL requests issued: 5032
+-- Part 2 gateway-faults /metrics --
+inference_backend_healthy{backend="mock-faults"} 1
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="2xx",error_class="none"} 397
+inference_requests_total{model="mock-8b",backend="mock-faults",tenant_tier="default",status_class="5xx",error_class="upstream_error"} 185
+inference_requests_total{model="mock-8b",backend="unknown",tenant_tier="default",status_class="5xx",error_class="overloaded"} 4450
+inference_retries_total{stage="pre_first_token"} 57
+inference_sheds_total{reason="backend_unavailable"} 0
+inference_sheds_total{reason="global_overload"} 0
+inference_sheds_total{reason="queue_full"} 4450
+inference_sheds_total{reason="tenant_rate_limit"} 0
+
+-- tearing down --
+
+Evidence directory: /home/user/inferops/faults/scenario-07/evidence/20260712T014939Z

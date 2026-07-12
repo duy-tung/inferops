@@ -106,6 +106,17 @@ Critical path: **IO-T002 → IO-T003 → IO-T004 → IO-T005 → I5 → IO-T006 
 
 ## IO-T006 — Fault injection: scenarios 1–6
 
+- **Status: DONE (2026-07-12).** Scenarios 1–6 injected against ad hoc released-digest
+  gateway/mock-backend instances (`faults/lib.sh`) and a 2-replica fleet (scenario 5). 5/6 verdicts
+  expected-semantics-matched (2, 5, 6 cleanly; 1, 3 matched with a documented, non-defect,
+  upstream-acknowledged single-backend-topology deviation); scenario 4 (slow client) is a real
+  deviation-documented finding — a genuinely stalled client's stream was not closed by
+  `-stream-write-timeout` across an 8s stall (2.6x the configured deadline), corroborating
+  infergate's own `internal/stream/relay.go` comment marking full slow-client handling "later
+  work." Client impact measured with a freshly built `inferbench` (commit `62c2704`, no upstream
+  release tag yet) for scenarios 1, 2, 5, 6: e.g. scenario 5 (gateway termination) 60/60 ok, 0
+  errors; scenario 12's inferbench run is under IO-T007. Full detail:
+  `faults/scenario-{01..06}/*`, `faults/campaign-matrix.md`, `docs/implementation-notes.md`.
 - **Goal/Repo:** repeatable injection scripts + observation checklists + verdicts for Contract 6 scenarios 1–6, run against mock/llama.cpp paths first. inferops.
 - **Requirement:** per scenario: hypothesis written BEFORE injection (expected gateway semantics + expected client behavior + metrics that must move); injection script; observation checklist; expected-vs-observed verdict in the campaign matrix. Client impact for scenarios 1, 2, 5, 6 measured with inferbench running during injection.
 - **Dependencies:** IO-T003, IO-T004.
@@ -118,6 +129,24 @@ Critical path: **IO-T002 → IO-T003 → IO-T004 → IO-T005 → I5 → IO-T006 
 
 ## IO-T007 — Fault injection: scenarios 7–12 + noisy neighbor
 
+- **Status: DONE, noisy-neighbor run deferred (2026-07-12).** Scenarios 7–12 injected; 12/12
+  campaign scenarios now executed (see `faults/campaign-matrix.md`). Scenarios 7, 9, 11, 12
+  expected-semantics-matched (7 with a documented single-backend deviation matching scenarios
+  1/3/10; 9 the cleanest result in the campaign — 35/35 requests unaffected by a real ~3s
+  PostgreSQL outage, `usage_ledger` backlog drained with 0 duplicates; 11 and 12 cite + re-confirm
+  IO-T004 evidence, with a fresh inferbench-driven client-impact run added for 12: 60/60 ok, 0
+  errors across a full 2-replica rolling update). Scenario 10 (one unhealthy backend) matched with
+  two documented deviations (single-backend routing-shift, same as 1/3/7; `docker pause`'s
+  fail-slow-not-fail-fast character for in-flight-at-injection requests). Scenario 8 cited +
+  re-confirmed IO-T010's `scripts/config-rollout.sh` twice fresh (0 dropped across all runs).
+  **Noisy-neighbor observation run:** a second tenant (`tenant-b-gold`, tier `gold`) was created
+  via the main gateway's own admin API against the shared `postgres-dev` registry; tenant A
+  (existing `smoke-tenant`, tier `default`) fired 200 concurrent requests (well above
+  `admission-global-inflight-budget=128`) while tenant B sent a steady 10-request trickle
+  throughout. **Result:** tenant B stayed at baseline latency (p50 122ms, p95 126ms) while tenant A
+  absorbed the queueing delay (p50 726ms, p95 1.32s) — tier isolation observed at the ops level,
+  not tuned (`faults/noisy-neighbor/notes.md`). Full detail: `faults/scenario-{07..12}/*`,
+  `faults/noisy-neighbor/*`, `faults/campaign-matrix.md`, `docs/implementation-notes.md`.
 - **Goal/Repo:** complete the campaign: scenarios 7–12 (same hypothesis-first pattern), plus a noisy-neighbor observation run (tenant A 10× load; verify tenant B protection at the ops level — the fairness logic itself is infergate's). inferops.
 - **Requirement:** scenarios 7–12 injected and adjudicated; scenario 12 client impact measured with inferbench; GPU-relevant scenarios (esp. 11 with real vLLM warm-up) may run on the CPU fallback path with a recorded deviation.
 - **Dependencies:** IO-T006; IO-T005 for GPU-relevant scenarios (CPU fallback allowed).

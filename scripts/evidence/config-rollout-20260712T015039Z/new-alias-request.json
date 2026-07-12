@@ -1,0 +1,1 @@
+{"id":"chatcmpl-86aQ8DvxQGB77jQpGna7JHk1XYuFIWui","object":"chat.completion","created":1783821046,"model":"qwen2.5-1.5b-instruct-v2","choices":[{"index":0,"message":{"role":"assistant","content":"Pong!"},"finish_reason":"stop"}],"usage":{"prompt_tokens":30,"completion_tokens":4,"total_tokens":34}}
